@@ -49,6 +49,7 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\stitches2.svg");
             // var filename = (@"..\..\..\svg\stitches3.svg");
             // var filename = (@"..\..\..\svg\stitches4.svg");
+            // var filename = (@"..\..\..\svg\shades.svg");
             var svgImageInfo = SvgPrimitiveConverter.ReadSvg(filename);
 
             #endregion
@@ -147,9 +148,10 @@ namespace ManuPathTest
             var pathFills = pathsFillSegs
                 //.Select(p => new RandomDotsFillGenerator(1000, true, true, p).GenerateFill())
                 .Select(p => new IntervalDotsFillGenerator(p,
-                    new Vector2(0.1f, 0.1f) * fillscale,
-                    new Vector2(0.1f, 0.1f) * fillscale,
-                    new Vector2(0.3f, 0.3f) * fillscale
+                    new Vector2(0.2f, 0.2f) * fillscale,
+                    new Vector2(0.05f, 0.05f) * fillscale,
+                    new Vector2(0.4f, 0.4f) * fillscale,
+                    new Vector2(0.1f, 0.1f) * fillscale
                     ).GenerateFill())
                 ;//.ToArray();
 

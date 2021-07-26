@@ -13,7 +13,8 @@ namespace ManuPath.FillGenerators
 
         private readonly Vector2 _intervalMin;
         private readonly Vector2 _intervalMax;
-        private readonly Vector2 _randomRadius;
+        private readonly Vector2 _randomRadiusMax;
+        private readonly Vector2 _randomRadiusMin;
         private readonly Path _path;
         private static Random _random = new Random(DateTime.Now.Millisecond);
         private RectangleF _pathbounds;
@@ -24,15 +25,25 @@ namespace ManuPath.FillGenerators
             public float? dy;
         }
 
-
-        public IntervalDotsFillGenerator(Path path, Vector2 intervalMin, Vector2 intervalMax, Vector2 randomRadius = default)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="path">Path to generate fill for</param>
+        /// <param name="intervalMin">Interval between points on minimum intensity</param>
+        /// <param name="intervalMax">Interval between points on maximum intensity</param>
+        /// <param name="randomRadiusMin">Randomization radius on minimum intensity</param>
+        /// <param name="randomRadiusMax">Randomization radius on maximum intensity</param>
+        public IntervalDotsFillGenerator(Path path, 
+            Vector2 intervalMin, Vector2 intervalMax, 
+            Vector2 randomRadiusMin = default, Vector2 randomRadiusMax = default)
         {
             if (!path.FillColor.HasValue)
                 throw new ArgumentException("polygon must have FillColor");
 
             _intervalMin = intervalMin;
             _intervalMax = intervalMax;
-            _randomRadius = randomRadius;
+            _randomRadiusMin = randomRadiusMin;
+            _randomRadiusMax = randomRadiusMax;
             _path = path;
             _pathbounds = _path.Bounds;
         }
@@ -46,9 +57,22 @@ namespace ManuPath.FillGenerators
 
             var intensity = _path.FillColor.Value.A;
 
-            var interval = (_intervalMin + (_intervalMax - ((_intervalMax - _intervalMin) * (intensity / 255f))));
+            // more intensity - less interval
+            var interval = new Vector2(
+                CommonMath.ConvertRange(0, 255, _intervalMin.X, _intervalMax.X, intensity),
+                CommonMath.ConvertRange(0, 255, _intervalMin.Y, _intervalMax.Y, intensity)
+               );
 
-            //var bounds = _path.Bounds;
+            Vector2 randomRadius = default;
+
+            if (_randomRadiusMin != Vector2.Zero || _randomRadiusMax != Vector2.Zero)
+            {
+                randomRadius = new Vector2(
+                    CommonMath.ConvertRange(0, 255, _randomRadiusMin.X, _randomRadiusMax.X, intensity),
+                    CommonMath.ConvertRange(0, 255, _randomRadiusMin.Y, _randomRadiusMax.Y, intensity)
+                );
+            }
+
             var bounds = _pathbounds;
             for (var y = bounds.Top; y < bounds.Bottom; y += interval.Y)
             {
@@ -176,12 +200,12 @@ namespace ManuPath.FillGenerators
                         if (ranges[i].X <= x && x <= ranges[i + 1].X)
                         {
 
-                            if (_randomRadius == Vector2.Zero)
+                            if (randomRadius == Vector2.Zero)
                                 res.Add(new Vector2(x, y));
                             else
                                 res.Add(new Vector2(
-                                    x + (float)(_random.NextDouble() - 0.5) * _randomRadius.X,
-                                    y + (float)(_random.NextDouble() - 0.5) * _randomRadius.Y));
+                                    x + (float)(_random.NextDouble() - 0.5) * randomRadius.X,
+                                    y + (float)(_random.NextDouble() - 0.5) * randomRadius.Y));
 
                             break;
                         }

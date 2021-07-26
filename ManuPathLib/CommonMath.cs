@@ -46,6 +46,18 @@ namespace ManuPath
 
 
 
+        // https://stackoverflow.com/questions/4229662/convert-numbers-within-a-range-to-numbers-within-another-range
+        public static float ConvertRange(
+            float originalStart, float originalEnd, // original range
+            float newStart, float newEnd, // desired range
+            float value) // value to convert
+        {
+            var scale = (newEnd - newStart) / (originalEnd - originalStart);
+            return newStart + ((value - originalStart) * scale);
+        }
+
+
+
         public static bool IsInRectangleInc(RectangleF rect, Vector2 p)
         {
             // laying on border included
