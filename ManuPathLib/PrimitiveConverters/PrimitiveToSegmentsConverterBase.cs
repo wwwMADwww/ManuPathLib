@@ -57,19 +57,22 @@ namespace ManuPath.PrimitiveConverters
                 segmentPath.AddRange(segs);
             }
 
-            var lastPrim = primitives.Last();
-
-            if (lastPoint.Value != lastPrim.LastPoint)
+            if (segmentPath.Any())
             {
-                segmentPath.Add(new Segment(lastPoint.Value, lastPrim.LastPoint));
-                lastPoint = lastPrim.LastPoint;
-            }
+                var lastPrim = primitives.Last();
 
-            // closing path
-            if (_closePath && pathStart.HasValue && lastPoint.HasValue)
-            {
-                var seg = new Segment(lastPoint.Value, pathStart.Value);
-                segmentPath.Add(seg);
+                if (lastPoint.Value != lastPrim.LastPoint)
+                {
+                    segmentPath.Add(new Segment(lastPoint.Value, lastPrim.LastPoint));
+                    lastPoint = lastPrim.LastPoint;
+                }
+
+                // closing path
+                if (_closePath && pathStart.HasValue && lastPoint.HasValue)
+                {
+                    var seg = new Segment(lastPoint.Value, pathStart.Value);
+                    segmentPath.Add(seg);
+                }
             }
 
             return segmentPath.ToArray();
