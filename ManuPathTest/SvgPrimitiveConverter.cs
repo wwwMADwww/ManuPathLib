@@ -73,8 +73,8 @@ namespace ManuPathTest
                     }
                 }
 
-                var fillColor = ((SvgColourServer)e.Fill).Colour;
-                var strokeColor = ((SvgColourServer)e.Stroke).Colour;
+                var fillColor = ((SvgColourServer)e.Fill)?.Colour ?? Color.Transparent;
+                var strokeColor = ((SvgColourServer)e.Stroke)?.Colour ?? Color.Transparent;
 
                 paths.Add(new Path() 
                 { 
