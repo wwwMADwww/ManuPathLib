@@ -10,6 +10,7 @@ using ManuPath.FillGenerators;
 using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
+using System.Collections;
 
 namespace ManuPathTest
 {
@@ -102,9 +103,44 @@ namespace ManuPathTest
 
             #region preparing strokes
 
-            // var strokeConverter = new PrimitiveToNSegmentsConverter(10);
+            var startPath = svgImageInfo.Paths.First();
+            var sortedPaths = new List<Path>() { startPath };
+            var unsortedPaths = svgImageInfo.Paths.ToList();
+            unsortedPaths.Remove(startPath);
 
-            var segDistance = Math.Max(6/scale.X, 6/scale.Y);
+
+            while (unsortedPaths.Any())
+            {
+                var sortedLast = sortedPaths.Last().Primitives.Last().LastPoint;
+
+                var ordered = unsortedPaths.Select(b => {
+                    var bFirst = b.Primitives.First().FirstPoint;
+                    var bLast = b.Primitives.Last().LastPoint;
+                    var distanceStraight = Math.Sqrt(Math.Pow(bFirst.X - sortedLast.X, 2) + Math.Pow(bFirst.Y - sortedLast.Y, 2));
+                    var distanceReverse  = Math.Sqrt(Math.Pow( bLast.X - sortedLast.X, 2) + Math.Pow( bLast.Y - sortedLast.Y, 2));
+
+                    return (path: b, distanceStraight, distanceReverse);
+                })
+                .OrderBy(x => x.distanceStraight <= x.distanceReverse ? x.distanceStraight : x.distanceReverse)
+                .ToList();
+
+                var p = ordered.First();
+                if (p.distanceStraight > p.distanceReverse)
+                {
+                    p.path.Reverse();
+                }
+                var closestPath = p.path;
+
+                sortedPaths.Add(closestPath);
+                unsortedPaths.Remove(closestPath);
+            }
+
+            svgImageInfo.Paths = sortedPaths;
+
+            //var strokeConverter = new PrimitiveToNSegmentsConverter(10);
+
+            //var segDistance = Math.Max(6/scale.X, 6/scale.Y);
+            var segDistance = Math.Max(2/scale.X, 2/scale.Y);
             var strokeConverter = new PrimitiveToEvenSegmentsConverter(segDistance - segDistance/10, segDistance + segDistance / 10, false);
             
 
@@ -285,6 +321,15 @@ namespace ManuPathTest
                     )
                 .ToArray();
 
+            var pathJumps = new Path() { Primitives = new List<Segment>(), StrokeColor = DColor.Red };
+            var prevLast = new Vector2();
+            foreach (var path in svgImageInfo.Paths.Where(p => p.StrokeColor.HasValue))
+            {
+                var point = path.Primitives.First().FirstPoint;
+                (pathJumps.Primitives as List<Segment>).Add(new Segment(prevLast, point));
+                prevLast = path.Primitives.Last().LastPoint;
+            }
+
             #endregion
 
 
@@ -339,6 +384,8 @@ namespace ManuPathTest
             var vaMarks = pathMarks.Select(p => PathToVertexLinesArray(p)).ToArray();
 
             // var vaFills = pathFills.Select(p => PathToVertexDotArray(p)).ToArray();
+
+            var vaPathJumps = PathToVertexLinesArray(pathJumps);
 
 
             // 1 uint square for debugging
@@ -401,6 +448,7 @@ namespace ManuPathTest
                 foreach (var poly in vaSegments)
                     window.Draw(poly, renderStates);
 
+                window.Draw(vaPathJumps, renderStates);
 
 
                 var mousepos = Mouse.GetPosition(window);

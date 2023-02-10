@@ -31,6 +31,14 @@ namespace ManuPath
             }
         }
 
+        public void Reverse()
+        {
+            var reversed = Primitives.ToList();
+            reversed.ForEach(p => p.Reverse());
+            reversed.Reverse();
+            Primitives = reversed;
+        }
+
         public object Clone()
         {
             return new Path()
@@ -56,6 +64,8 @@ namespace ManuPath
         Vector2 FirstPoint { get; }
         Vector2 LastPoint { get; }
         RectangleF Bounds { get; }
+
+        void Reverse();
     }
 
 
@@ -77,6 +87,8 @@ namespace ManuPath
         public RectangleF Bounds => new RectangleF(Pos.X, Pos.Y, 0, 0);
 
 
+        public void Reverse() { }
+
 
         public override bool Equals(object obj)
         {
@@ -93,6 +105,7 @@ namespace ManuPath
         {
             return 1731973265 + Pos.GetHashCode();
         }
+
     }
 
 
@@ -129,6 +142,10 @@ namespace ManuPath
             }
         }
 
+        public void Reverse()
+        {
+            (P2, P1) = (P1, P2);
+        }
 
 
         public override bool Equals(object obj)
@@ -150,6 +167,7 @@ namespace ManuPath
             hashCode = hashCode * -1521134295 + P2.GetHashCode();
             return hashCode;
         }
+
     }
 
 
@@ -172,6 +190,8 @@ namespace ManuPath
         public Vector2 FirstPoint => P1;
         public Vector2 LastPoint => P2;
 
+
+
         public RectangleF Bounds 
         { 
             get {
@@ -191,6 +211,11 @@ namespace ManuPath
 
                 return new RectangleF(new PointF(minX, minY), new SizeF(maxX - minX, maxY - minY));
             } 
+        }
+
+        public void Reverse()
+        {
+            (P2, C2, C1, P1) = (P1, C1, C2, P2);
         }
 
 
@@ -217,6 +242,7 @@ namespace ManuPath
             hashCode = hashCode * -1521134295 + C2.GetHashCode();
             return hashCode;
         }
+
     }
 
 }
