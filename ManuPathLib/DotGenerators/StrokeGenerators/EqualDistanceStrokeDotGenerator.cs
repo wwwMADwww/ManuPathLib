@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using ManuPath.Figures;
+using ManuPath.Figures.Primitives;
+using ManuPath.Maths;
 
-namespace ManuPath.PrimitiveConverters
+namespace ManuPath.DotGenerators.StrokeGenerators
 {
-    public class PrimitiveToEvenSegmentsConverter : PrimitiveToSegmentsConverterBase
+    public class EqualDistanceStrokeDotGenerator : StrokeDotGeneratorBase
     {
 
         private readonly float _pointDistanceMin;
@@ -15,13 +18,14 @@ namespace ManuPath.PrimitiveConverters
         private readonly float _initialDeltaTKoeff;
         private readonly float _deltaTKoeff2;
 
-        public PrimitiveToEvenSegmentsConverter(
-            float pointDistanceMin, float pointDistanceMax, bool closePath,
+        public EqualDistanceStrokeDotGenerator(
+            IFigure figure,
+            float pointDistanceMin, float pointDistanceMax,
             float initialDeltaT = 0.1f, float initialDeltaTKoeff = 2f, float deltaTKoeff2 = 1.2f)
+            : base(figure)
         {
             _pointDistanceMin = pointDistanceMin;
             _pointDistanceMax = pointDistanceMax;
-            _closePath = closePath;
             _initialDeltaT = initialDeltaT;
             _initialDeltaTKoeff = initialDeltaTKoeff;
             _deltaTKoeff2 = deltaTKoeff2;
@@ -30,10 +34,10 @@ namespace ManuPath.PrimitiveConverters
 
 
 
-        protected override IEnumerable<Segment> CubicBezierToSegments(CubicBezier cb, Vector2 prevPoint = default)
+        protected override Vector2[] CubicBezierToSegments(CubicBezier cb, Vector2 prevPoint = default)
         {
 
-            var res = new List<Segment>();
+            var res = new List<Vector2>() { cb.P1 };
 
             // debug, statistics
             // var repeatEvent = 0;
@@ -143,7 +147,7 @@ namespace ManuPath.PrimitiveConverters
                     break;
                 // если отрезок слишком короткий, то не добавляем его
 
-                res.Add(new Segment(p1, p2));
+                res.Add(p2);
 
                 p1 = p2;
 
@@ -153,14 +157,14 @@ namespace ManuPath.PrimitiveConverters
             // res.Add(new Segment(p1, cb.P2));
 
 
-            return res;
+            return res.ToArray();
         }
 
 
 
-        protected override IEnumerable<Segment> SegmentDivide(Segment segment, Vector2 prevPoint = default)
+        protected override Vector2[] SegmentDivide(Segment segment, Vector2 prevPoint = default)
         {
-            var res = new List<Segment>();
+            var res = new List<Vector2>() ;
 
             var dx = segment.P2.X - segment.P1.X;
             var dy = segment.P2.Y - segment.P1.Y;
@@ -191,16 +195,15 @@ namespace ManuPath.PrimitiveConverters
                             }
                         }
                     }
-
                 }
-
-                res.Add(new Segment(prevPoint, start));
             }
+
+            res.Add(start);
 
             var seg = new Segment(start, segment.P2);
 
 
-            var segmentCount = (int) (segment.Length / _pointDistanceMin);
+            var segmentCount = (int)(segment.Length / _pointDistanceMin);
 
             dx = (seg.P2.X - seg.P1.X) / segmentCount;
             dy = (seg.P2.Y - seg.P1.Y) / segmentCount;
@@ -211,12 +214,15 @@ namespace ManuPath.PrimitiveConverters
             for (int i = 1; i <= segmentCount; i++)
             {
                 var p2 = new Vector2(seg.P1.X + dx * i, seg.P1.Y + dy * i);
-                res.Add(new Segment(p1, p2));
-                p1 = p2;
+                res.Add(p2);
             }
 
             return res.ToArray();
         }
+
+        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default) => throw new NotImplementedException();
+
+        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default) => throw new NotImplementedException();
 
 
 

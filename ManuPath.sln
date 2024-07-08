@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30711.63
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManuPathLib", "ManuPathLib\ManuPathLib.csproj", "{1A2212F3-B8A2-40FE-9CBE-884E801A02E5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManuPathTest", "ManuPathTest\ManuPathTest.csproj", "{1BE1DB61-848B-4E7D-ACA1-81B628325347}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManuPath.Svg", "ManuPath.Svg\ManuPath.Svg.csproj", "{94923E75-93D7-4A40-8999-2CB3980059E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{1BE1DB61-848B-4E7D-ACA1-81B628325347}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1BE1DB61-848B-4E7D-ACA1-81B628325347}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1BE1DB61-848B-4E7D-ACA1-81B628325347}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94923E75-93D7-4A40-8999-2CB3980059E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94923E75-93D7-4A40-8999-2CB3980059E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94923E75-93D7-4A40-8999-2CB3980059E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94923E75-93D7-4A40-8999-2CB3980059E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

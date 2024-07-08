@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 
-namespace ManuPath
+namespace ManuPath.Maths
 {
     public static class CommonMath
     {
@@ -20,7 +20,7 @@ namespace ManuPath
 
         public static bool IsInRange(float start, float end, float value)
         {
-            return (start <= end)
+            return start <= end
                 ? start <= value && value <= end
                 : start >= value && value >= end;
         }
@@ -31,7 +31,7 @@ namespace ManuPath
             if (r1start > r1end) (r1start, r1end) = (r1end, r1start);
             if (r2start > r2end) (r2start, r2end) = (r2end, r2start);
 
-            return (Math.Max(r1start, r2start) - Math.Min(r1end, r2end)) <= 0;
+            return Math.Max(r1start, r2start) - Math.Min(r1end, r2end) <= 0;
         }
 
 
@@ -40,8 +40,8 @@ namespace ManuPath
         public static bool IsOnBothSegments(Vector2 sa1, Vector2 sa2, Vector2 sb1, Vector2 sb2, Vector2 point)
         {
             return
-                (IsInRange(sa1.X, sa2.X, point.X) && IsInRange(sa1.Y, sa2.Y, point.Y)) &&
-                (IsInRange(sb1.X, sb2.X, point.X) && IsInRange(sb1.Y, sb2.Y, point.Y));
+                IsInRange(sa1.X, sa2.X, point.X) && IsInRange(sa1.Y, sa2.Y, point.Y) &&
+                IsInRange(sb1.X, sb2.X, point.X) && IsInRange(sb1.Y, sb2.Y, point.Y);
         }
 
 
@@ -53,7 +53,7 @@ namespace ManuPath
             float value) // value to convert
         {
             var scale = (newEnd - newStart) / (originalEnd - originalStart);
-            return newStart + ((value - originalStart) * scale);
+            return newStart + (value - originalStart) * scale;
         }
 
 
@@ -62,8 +62,8 @@ namespace ManuPath
         {
             // laying on border included
             return
-                (rect.X <= p.X) && (p.X <= rect.X + Math.Abs(rect.Width)) &&
-                (rect.Y <= p.Y) && (p.Y <= rect.Y + Math.Abs(rect.Height));
+                rect.X <= p.X && p.X <= rect.X + Math.Abs(rect.Width) &&
+                rect.Y <= p.Y && p.Y <= rect.Y + Math.Abs(rect.Height);
         }
 
 
@@ -72,8 +72,8 @@ namespace ManuPath
         {
             // laying on border excluded
             return
-                (rect.X < p.X) && (p.X < rect.X + Math.Abs(rect.Width)) &&
-                (rect.Y < p.Y) && (p.Y < rect.Y + Math.Abs(rect.Height));
+                rect.X < p.X && p.X < rect.X + Math.Abs(rect.Width) &&
+                rect.Y < p.Y && p.Y < rect.Y + Math.Abs(rect.Height);
         }
 
 
@@ -163,14 +163,14 @@ namespace ManuPath
         public static Vector2? LineLineIntesection(Vector2 sa1, Vector2 sa2, Vector2 sb1, Vector2 sb2)
         {
             // https://pomax.github.io/bezierinfo/index.html#intersections
-        
+
             var nx = (sa1.X * sa2.Y - sa1.Y * sa2.X) * (sb1.X - sb2.X) - (sa1.X - sa2.X) * (sb1.X * sb2.Y - sb1.Y * sb2.X);
             var ny = (sa1.X * sa2.Y - sa1.Y * sa2.X) * (sb1.Y - sb2.Y) - (sa1.Y - sa2.Y) * (sb1.X * sb2.Y - sb1.Y * sb2.X);
             var d = (sa1.X - sa2.X) * (sb1.Y - sb2.Y) - (sa1.Y - sa2.Y) * (sb1.X - sb2.X);
             if (d == 0)
                 return null;
             var p = new Vector2(nx / d, ny / d);
-            return IsOnBothSegments(sa1, sa2, sb1, sb2, p) ? p : (Vector2?) null;
+            return IsOnBothSegments(sa1, sa2, sb1, sb2, p) ? p : (Vector2?)null;
         }
 
 
@@ -178,7 +178,7 @@ namespace ManuPath
         {
             r.X = r.X * scale.X + shift.Y;
             r.Y = r.Y * scale.Y + shift.Y;
-            r.Width  = r.Width  * scale.X + shift.Y;
+            r.Width = r.Width * scale.X + shift.Y;
             r.Height = r.Height * scale.Y + shift.Y;
             return r;
         }
@@ -276,7 +276,7 @@ namespace ManuPath
                 radius * radius;
 
             var det = B * B - 4 * A * C;
-            if ((A <= CommonMath._epsilon) || (det < 0))
+            if (A <= _epsilon || det < 0)
             {
                 // No real solutions.
                 return new Vector2[0];
@@ -303,6 +303,13 @@ namespace ManuPath
         }
 
 
+
+        public static Vector2 EllipseCoord(Vector2 center, Vector2 radius, float angle)
+        {
+            var x = radius.X * Math.Cos(angle) + center.X;
+            var y = radius.Y * Math.Sin(angle) + center.Y;
+            return new Vector2((float)x, (float)y);
+        }
 
     }
 

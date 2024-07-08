@@ -4,10 +4,13 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using ManuPath.Figures;
+using ManuPath.Figures.Primitives;
+using ManuPath.Maths;
 
-namespace ManuPath.FillGenerators
+namespace ManuPath.DotGenerators.FillGenerators
 {
-    public class IntervalDotsFillGenerator: IPrimitiveFillGenerator
+    public class IntervalFillDotGenerator : IDotGenerator
     {
         const float bezierDeltaT = 0.001f;
 
@@ -15,7 +18,7 @@ namespace ManuPath.FillGenerators
         private readonly Vector2 _intervalMax;
         private readonly Vector2 _randomRadiusMax;
         private readonly Vector2 _randomRadiusMin;
-        private readonly Path _path;
+        private readonly IFigure _figure;
         private static Random _random = new Random(DateTime.Now.Millisecond);
         private RectangleF _pathbounds;
 
@@ -28,34 +31,33 @@ namespace ManuPath.FillGenerators
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="path">Path to generate fill for</param>
+        /// <param name="figure">Path to generate fill for</param>
         /// <param name="intervalMin">Interval between points on minimum intensity</param>
         /// <param name="intervalMax">Interval between points on maximum intensity</param>
         /// <param name="randomRadiusMin">Randomization radius on minimum intensity</param>
         /// <param name="randomRadiusMax">Randomization radius on maximum intensity</param>
-        public IntervalDotsFillGenerator(Path path, 
-            Vector2 intervalMin, Vector2 intervalMax, 
-            Vector2 randomRadiusMin = default, Vector2 randomRadiusMax = default)
+        public IntervalFillDotGenerator(
+            IFigure figure,
+            Vector2 intervalMin,
+            Vector2 intervalMax,
+            Vector2 randomRadiusMin = default,
+            Vector2 randomRadiusMax = default)
         {
-            if (!path.FillColor.HasValue)
-                throw new ArgumentException("polygon must have FillColor");
+            if (figure.Fill == null) throw new ArgumentException("Figure must have Fill");
 
             _intervalMin = intervalMin;
             _intervalMax = intervalMax;
             _randomRadiusMin = randomRadiusMin;
             _randomRadiusMax = randomRadiusMax;
-            _path = path;
-            _pathbounds = _path.Bounds;
+            _figure = figure;
+            _pathbounds = _figure.Bounds;
         }
 
 
 
-        public Path GenerateFill()
+        public GeneratedDots[] Generate()
         {
-
-            var res = new List<Vector2>();
-
-            var intensity = _path.FillColor.Value.A;
+            var intensity = _figure.Fill.Color.A;
 
             // more intensity - less interval
             var interval = new Vector2(
@@ -73,26 +75,49 @@ namespace ManuPath.FillGenerators
                 );
             }
 
+            Vector2[] dots;
+
+            if (_figure is Path path)
+            {
+                dots = GenerateForPath(path, interval, randomRadius);
+            }
+            else
+            {
+                throw new NotImplementedException(_figure.GetType().Name);
+            }
+
+            return new[] { new GeneratedDots()
+            {
+                Color = _figure.Fill.Color,
+                Dots = dots
+            }};
+        }
+
+
+        private Vector2[] GenerateForPath(Path path, Vector2 interval, Vector2 randomRadius)
+        {
+            var dots = new List<Vector2>();
+
             var bounds = _pathbounds;
             for (var y = bounds.Top; y < bounds.Bottom; y += interval.Y)
             {
 
                 var segpoints = new List<Intersection>();
 
-                foreach (var prim in _path.Primitives)
+                foreach (var prim in path.Primitives)
                 {
 
                     var intersections = PathMath.IsRightRayIntersectsWithPrim(prim, new Vector2(bounds.Left - 1, y));
                     if (!intersections?.Any() ?? true)
                         continue;
 
-                    switch (_path.FillRule)
+                    switch (_figure.Fill.Rule)
                     {
-                        case PathFillRule.EvenOdd:
+                        case FillRule.EvenOdd:
                             segpoints.AddRange(intersections.Select(i => new Intersection() { point = i.point }));
                             break;
 
-                        case PathFillRule.NonZeroWinding:
+                        case FillRule.NonZeroWinding:
 
                             // casting ray from point to right
                             // on clockwise - line goes down
@@ -133,13 +158,13 @@ namespace ManuPath.FillGenerators
 
                 var ranges = new List<Vector2>();
 
-                switch (_path.FillRule)
+                switch (_figure.Fill.Rule)
                 {
-                    case PathFillRule.EvenOdd:
+                    case FillRule.EvenOdd:
                         ranges = segpoints.Select(sp => sp.point).ToList();
                         break;
 
-                    case PathFillRule.NonZeroWinding:
+                    case FillRule.NonZeroWinding:
 
                         segpoints = segpoints.OrderBy(p => p.point.X).ToList();
 
@@ -195,15 +220,15 @@ namespace ManuPath.FillGenerators
 
                 for (var x = bounds.Left; x < bounds.Right; x += interval.X)
                 {
-                    for (int i = 0; i < ranges.Count; i += 2 )
+                    for (int i = 0; i < ranges.Count; i += 2)
                     {
                         if (ranges[i].X <= x && x <= ranges[i + 1].X)
                         {
 
                             if (randomRadius == Vector2.Zero)
-                                res.Add(new Vector2(x, y));
+                                dots.Add(new Vector2(x, y));
                             else
-                                res.Add(new Vector2(
+                                dots.Add(new Vector2(
                                     x + (float)(_random.NextDouble() - 0.5) * randomRadius.X,
                                     y + (float)(_random.NextDouble() - 0.5) * randomRadius.Y));
 
@@ -215,12 +240,7 @@ namespace ManuPath.FillGenerators
 
             } // /for y
 
-            return new Path()
-            {
-                StrokeColor = _path.FillColor,
-                Primitives = res.Select(v => new Dot(v)).ToArray()
-            };
-
+            return dots.ToArray();
         }
 
     }

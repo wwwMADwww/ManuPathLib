@@ -5,7 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 
-namespace ManuPath
+namespace ManuPath.Maths
 {
     public static class BezierMath
     {
@@ -14,8 +14,8 @@ namespace ManuPath
         public static float BezierCoord(float t, float i0, float i1, float i2, float i3)
         {
             return (float)(
-                i0 * Math.Pow((1 - t), 3) +
-                i1 * 3 * t * Math.Pow((1 - t), 2) +
+                i0 * Math.Pow(1 - t, 3) +
+                i1 * 3 * t * Math.Pow(1 - t, 2) +
                 i2 * 3 * Math.Pow(t, 2) * (1 - t) +
                 i3 * Math.Pow(t, 3)
             );
@@ -36,17 +36,17 @@ namespace ManuPath
             // A real-cuberoots-only function:
             double CubeRoot(double v)
             {
-                return (v < 0)
+                return v < 0
                     ? -Math.Pow(-v, 1.0 / 3.0)
                     : Math.Pow(v, 1.0 / 3.0);
             }
 
 
 
-            var a = (3 * pa - 6 * pb + 3 * pc);
-            var b = (-3 * pa + 3 * pb);
+            var a = 3 * pa - 6 * pb + 3 * pc;
+            var b = -3 * pa + 3 * pb;
             var c = pa;
-            var d = (-pa + 3 * pb - 3 * pc + pd);
+            var d = -pa + 3 * pb - 3 * pc + pd;
 
             // do a check to see whether we even need cubic solving:
             if (CommonMath.IsFloatEquals(d, 0))
@@ -131,11 +131,11 @@ namespace ManuPath
             float k = p3 - p2;
 
             // P'(x) = (3i - 6j + 3k)t^2 + (-6i + 6j)t + 3i
-            float a = (3 * i) - (6 * j) + (3 * k);
-            float b = (6 * j) - (6 * i);
-            float c = (3 * i);
+            float a = 3 * i - 6 * j + 3 * k;
+            float b = 6 * j - 6 * i;
+            float c = 3 * i;
 
-            float sqrtPart = (b * b) - (4 * a * c);
+            float sqrtPart = b * b - 4 * a * c;
             bool hasSolution = sqrtPart >= 0;
             if (!hasSolution)
             {

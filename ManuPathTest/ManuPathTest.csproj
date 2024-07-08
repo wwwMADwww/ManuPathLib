@@ -11,10 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="SFML.Net" Version="2.5.0" />
-    <PackageReference Include="Svg" Version="3.2.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ManuPath.Svg\ManuPath.Svg.csproj" />
     <ProjectReference Include="..\ManuPathLib\ManuPathLib.csproj" />
   </ItemGroup>
 

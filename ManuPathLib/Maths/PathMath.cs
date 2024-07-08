@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using ManuPath.Figures;
+using ManuPath.Figures.Primitives;
 
-namespace ManuPath
+namespace ManuPath.Maths
 {
     public static class PathMath
     {
@@ -140,7 +142,7 @@ namespace ManuPath
         }
 
 
-        public static bool IsPointInPolygon(IEnumerable<Segment> polygon, Vector2 point, PathFillRule rule)
+        public static bool IsPointInPolygon(IEnumerable<Segment> polygon, Vector2 point, FillRule rule)
         {
 
             int count = 0;
@@ -155,11 +157,11 @@ namespace ManuPath
                 {
                     switch (rule)
                     {
-                        case PathFillRule.EvenOdd:
+                        case FillRule.EvenOdd:
                             count++;
                             break;
 
-                        case PathFillRule.NonZeroWinding:
+                        case FillRule.NonZeroWinding:
 
                             // casting ray from point to right
                             // on clockwise - line goes down
@@ -184,8 +186,8 @@ namespace ManuPath
 
             switch (rule)
             {
-                case PathFillRule.EvenOdd: return count % 2 == 1;
-                case PathFillRule.NonZeroWinding: return count != 0;
+                case FillRule.EvenOdd: return count % 2 == 1;
+                case FillRule.NonZeroWinding: return count != 0;
                 default: throw new Exception("dafuq r u doin?");
             }
         }
@@ -205,13 +207,13 @@ namespace ManuPath
                 var intersections = IsRightRayIntersectsWithPrim(prim, point);
                 if (intersections?.Any() ?? false)
                 {
-                    switch (path.FillRule)
+                    switch (path.Fill.Rule)
                     {
-                        case PathFillRule.EvenOdd:
+                        case FillRule.EvenOdd:
                             count += intersections.Count();
                             break;
 
-                        case PathFillRule.NonZeroWinding:
+                        case FillRule.NonZeroWinding:
 
                             // casting ray from point to right
                             // on clockwise - line goes down
@@ -252,10 +254,10 @@ namespace ManuPath
             }
 
 
-            switch (path.FillRule)
+            switch (path.Fill.Rule)
             {
-                case PathFillRule.EvenOdd: return count % 2 == 1;
-                case PathFillRule.NonZeroWinding: return count != 0;
+                case FillRule.EvenOdd: return count % 2 == 1;
+                case FillRule.NonZeroWinding: return count != 0;
                 default: throw new Exception("dafuq r u doin?");
             }
         }
