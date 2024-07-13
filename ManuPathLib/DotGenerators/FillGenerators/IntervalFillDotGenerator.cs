@@ -54,6 +54,8 @@ namespace ManuPath.DotGenerators.FillGenerators
             // TODO: implement ellipse and rectangle
             _figure = figure.ToPath(transform);
 
+            FilterAndClosePrimitives((Path)_figure);
+
             _pathbounds = _figure.GetBounds();
         }
 
@@ -245,6 +247,65 @@ namespace ManuPath.DotGenerators.FillGenerators
             } // /for y
 
             return dots.ToArray();
+        }
+
+        private void FilterAndClosePrimitives(Path path)
+        {
+            Vector2? lastOpen = null;
+
+            var primitives = path.Primitives
+                .Where(p => !(p is Dot))
+                .ToArray();
+
+            var len = primitives.Length;
+
+            int start;
+            for (start = 0; start < len; start++)
+            {
+                var currentEnd = primitives[start].LastPoint;
+
+                var nextIndex = start < primitives.Length - 1 ? start + 1 : 0;
+
+                var nextStart = primitives[nextIndex].FirstPoint;
+
+                if (!CommonMath.IsVectorsEquals(nextStart, currentEnd))
+                {
+                    lastOpen = primitives[nextIndex].FirstPoint;
+                }
+            }
+
+            if (lastOpen == null)
+            {
+                path.Primitives = primitives;
+            }
+
+            var closedPrims = new List<IPathPrimitive>(primitives.Length + 1);
+
+            for (var i = start; i < len + start; i++)
+            {
+                closedPrims.Add(primitives[i % len]);
+
+                var currentEnd = primitives[      i % len].LastPoint;
+
+                var nextStart  = primitives[(i + 1) % len].FirstPoint;
+
+                if (!CommonMath.IsVectorsEquals(nextStart, currentEnd))
+                {
+                    if (lastOpen.HasValue)
+                    {
+                        var seg = new Segment(currentEnd, lastOpen.Value);
+                        lastOpen = nextStart;
+                        closedPrims.Add(seg);
+                    }
+                    else
+                    { 
+                        lastOpen = currentEnd;
+                    }
+                }
+            }
+
+            path.Primitives = closedPrims.ToArray();
+
         }
 
     }

@@ -38,10 +38,10 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\loop.svg");
             // var filename = (@"..\..\..\svg\loop2.svg");
             // var filename = (@"..\..\..\svg\loop22.svg");
-            var filename = (@"..\..\..\svg\polygon.svg");
+            // var filename = (@"..\..\..\svg\polygon.svg");
             // var filename = (@"..\..\..\svg\polygon 2.svg");
             // var filename = (@"..\..\..\svg\polygon 3.svg");
-            // var filename = (@"..\..\..\svg\polygon 4.svg");
+            // var filename = (@"..\..\..\svg\polygon 4.svg"); // TODO: weird sorting by distance
             // var filename = (@"..\..\..\svg\spiral.svg");
             // var filename = (@"..\..\..\svg\hor.svg");
             // var filename = (@"..\..\..\svg\vert.svg");
@@ -58,9 +58,10 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\random 2.svg");
             // var filename = (@"..\..\..\svg\transform.svg");
             // var filename = (@"..\..\..\svg\transform 2.svg");
-            var filename = (@"..\..\..\svg\transform 3.svg");
+            // var filename = (@"..\..\..\svg\transform 3.svg");
             // var filename = (@"..\..\..\svg\transform 4.svg");
             // var filename = (@"..\..\..\svg\transform 5.svg");
+            var filename = (@"..\..\..\svg\opens.svg");
 
 
             var vectorImage = new SvgImageReader().ReadSvg(filename);

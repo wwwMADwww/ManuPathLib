@@ -14,6 +14,9 @@ namespace ManuPath.Maths
 
         public static bool IsFloatEquals(float a, float b, float epsilon = _epsilon) => Math.Abs(a - b) < epsilon;
 
+        public static bool IsVectorsEquals(Vector2 a, Vector2 b, float epsilon = _epsilon) =>
+            IsFloatEquals(a.X, b.X, epsilon) && IsFloatEquals(a.Y, b.Y, epsilon);
+
 
         public static float Distance(Vector2 p1, Vector2 p2) => (float)Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
 
