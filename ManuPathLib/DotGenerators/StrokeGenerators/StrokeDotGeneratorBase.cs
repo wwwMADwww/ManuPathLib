@@ -4,7 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ManuPath.Figures;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
 
 namespace ManuPath.DotGenerators.StrokeGenerators
 {
@@ -12,13 +12,15 @@ namespace ManuPath.DotGenerators.StrokeGenerators
     {
         private readonly IFigure _figure;
 
-        public StrokeDotGeneratorBase(IFigure figure)
+        public StrokeDotGeneratorBase(IFigure figure, bool transform)
         {
             if (figure.Stroke == null)
             {
                 throw new ArgumentException("Figure must have Stroke");
             }
-            _figure = figure;
+
+            // TODO: implement ellipse and rectangle
+            _figure = figure.ToPath(transform);
         }
 
         public GeneratedDots[] Generate()
@@ -38,7 +40,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
             }
             else
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException($"Unknown figure type {_figure.GetType().Name}");
             }
 
             return new[] { new GeneratedDots()
@@ -77,7 +79,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
                 }
                 else
                 {
-                    throw new NotSupportedException($"primitive type is {primitive.GetType().Name}");
+                    throw new NotSupportedException($"Unknown primitive type {primitive.GetType().Name}");
                 }
 
                 if (segs.Length == 0)

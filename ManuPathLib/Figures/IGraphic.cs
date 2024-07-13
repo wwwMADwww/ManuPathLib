@@ -4,13 +4,13 @@ using System.Drawing;
 using System.Numerics;
 using System.Text;
 
-namespace ManuPath.Figures.Primitives
+namespace ManuPath.Figures
 {
-    public interface IPathPrimitive : IEquatable<IPathPrimitive>
+    public interface IGraphic
     {
         Vector2 FirstPoint { get; }
+
         Vector2 LastPoint { get; }
-        RectangleF Bounds { get; }
 
         void Reverse();
     }

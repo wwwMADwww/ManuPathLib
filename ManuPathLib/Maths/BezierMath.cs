@@ -161,7 +161,30 @@ namespace ManuPath.Maths
             return new[] { s1, s2 }.Where(s => s.HasValue).Select(s => s.Value).ToArray();
         }
 
+        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)[] CreateBeziersFromEllipse(Vector2 center, Vector2 radius)
+        {
+            // https://stackoverflow.com/a/57007406
+            // https://jsfiddle.net/nooorz24/2u9forep/12/
 
+            static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2) CreateQuarter(float centerX, float centerY, float radiusX, float radiusY)
+            {
+                // TODO: implement for arcs https://pomax.github.io/bezierinfo/#circles_cubic
+                return (
+                    new Vector2(centerX - (radiusX), centerY - (0)),
+                    new Vector2(centerX - (radiusX), centerY - (0.552f * radiusY)),
+                    new Vector2(centerX - (0.552f * radiusX), centerY - (radiusY)),
+                    new Vector2(centerX - (0), centerY - (radiusY))
+                );
+            }
+
+            return new[]
+            {
+                CreateQuarter(center.X, center.Y, -radius.X,  radius.Y),
+                CreateQuarter(center.X, center.Y,  radius.X,  radius.Y),
+                CreateQuarter(center.X, center.Y,  radius.X, -radius.Y),
+                CreateQuarter(center.X, center.Y, -radius.X, -radius.Y)
+            };
+        }
 
 
     }

@@ -4,7 +4,8 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ManuPath.Figures;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
+using ManuPath.Transforms;
 
 namespace ManuPath.Maths
 {
@@ -36,7 +37,7 @@ namespace ManuPath.Maths
                 //  P--.--P--.-P-> miss 1  
                 //     .     .
 
-                var bounds = prim.Bounds;
+                var bounds = prim.GetBounds();
 
                 var segYmin = bounds.Top;
                 var segYmax = bounds.Bottom;
@@ -108,9 +109,9 @@ namespace ManuPath.Maths
 
                 var cbr = new CubicBezier(
                     cb.P1 - rayStart,
-                    cb.P2 - rayStart,
                     cb.C1 - rayStart,
-                    cb.C2 - rayStart
+                    cb.C2 - rayStart,
+                    cb.P2 - rayStart
                     );
 
                 var roots = BezierMath.GetBezierCubicRoots(cbr.P1.Y, cbr.C1.Y, cbr.C2.Y, cbr.P2.Y).ToList();
@@ -300,9 +301,9 @@ namespace ManuPath.Maths
                 {
                     var p = new CubicBezier(
                         cb.P1 * scale + shift,
-                        cb.P2 * scale + shift,
                         cb.C1 * scale + shift,
-                        cb.C2 * scale + shift
+                        cb.C2 * scale + shift,
+                        cb.P2 * scale + shift
                         );
 
                     res.Add(p);

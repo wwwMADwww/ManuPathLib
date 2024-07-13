@@ -262,7 +262,7 @@ namespace ManuPath.Maths
 
 
 
-        public static Vector2[] LineCircleIntersections(Vector2 circle, float radius, Vector2 s1, Vector2 s2)
+        public static Vector2[] LineCircleIntersections(Vector2 center, float radius, Vector2 s1, Vector2 s2)
         {
             // http://csharphelper.com/blog/2014/09/determine-where-a-line-intersects-a-circle-in-c/
 
@@ -270,16 +270,16 @@ namespace ManuPath.Maths
             var dy = s2.Y - s1.Y;
 
             var A = dx * dx + dy * dy;
-            var B = 2 * (dx * (s1.X - circle.X) + dy * (s1.Y - circle.Y));
-            var C = (s1.X - circle.X) * (s1.X - circle.X) +
-                (s1.Y - circle.Y) * (s1.Y - circle.Y) -
+            var B = 2 * (dx * (s1.X - center.X) + dy * (s1.Y - center.Y));
+            var C = (s1.X - center.X) * (s1.X - center.X) +
+                (s1.Y - center.Y) * (s1.Y - center.Y) -
                 radius * radius;
 
             var det = B * B - 4 * A * C;
             if (A <= _epsilon || det < 0)
             {
                 // No real solutions.
-                return new Vector2[0];
+                return Array.Empty<Vector2>();
             }
             else if (det == 0) // can be omited safely
             {
@@ -302,7 +302,29 @@ namespace ManuPath.Maths
             }
         }
 
+        public static (Vector2 p1, Vector2 p2)[] GetRectangleSegments(float x, float y, float w, float h)
+            => GetRectangleSegments(new RectangleF(x, y, w, h));
 
+        public static (Vector2 p1, Vector2 p2)[] GetRectangleSegments(RectangleF rect)
+        {
+            return new[]
+            {
+                (new Vector2(rect.Left,  rect.Top)   , new Vector2(rect.Right, rect.Top)),
+                (new Vector2(rect.Right, rect.Top)   , new Vector2(rect.Right, rect.Bottom)),
+                (new Vector2(rect.Right, rect.Bottom), new Vector2(rect.Left,  rect.Bottom)),
+                (new Vector2(rect.Left,  rect.Bottom), new Vector2(rect.Left,  rect.Top))
+            };
+        }
+
+
+        public static float DegToRad(float deg)
+        {
+            var radians = (Math.PI / 180) * deg;
+            return (float) radians;
+        }
+
+        public static Vector2 CircleCoord(Vector2 center, float radius, float angle) =>
+            EllipseCoord(center, new Vector2(radius), angle);
 
         public static Vector2 EllipseCoord(Vector2 center, Vector2 radius, float angle)
         {
@@ -311,6 +333,25 @@ namespace ManuPath.Maths
             return new Vector2((float)x, (float)y);
         }
 
+
+        public static float GetAngle(Vector2 center, Vector2 p)
+        {
+            return (float) Math.Atan2(p.Y - center.Y, p.X - center.X);
+        }
+
+        public static float GetAngle(float cx, float cy, float px, float py)
+        {
+            return (float)Math.Atan2(py - cy, px - cx);
+        }
+
+
+        public static Vector2 Rotate(Vector2 center, Vector2 p, float angle, bool absoluteAngle = false)
+        {
+            var oldAngle = absoluteAngle ? 0f : GetAngle(center, p);
+            var distance = Distance(center, p);
+            var rotated = CircleCoord(center, distance, oldAngle + angle);  
+            return rotated;
+        }
     }
 
 }

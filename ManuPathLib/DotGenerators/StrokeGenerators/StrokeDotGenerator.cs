@@ -4,7 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ManuPath.Figures;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
 using ManuPath.Maths;
 
 namespace ManuPath.DotGenerators.StrokeGenerators
@@ -13,8 +13,8 @@ namespace ManuPath.DotGenerators.StrokeGenerators
     {
         private readonly int _segmentCount;
 
-        public StrokeDotGenerator(IFigure figure, int segmentCount)
-            :base(figure)
+        public StrokeDotGenerator(IFigure figure, bool transform, int segmentCount)
+            :base(figure, transform)
         {
             _segmentCount = segmentCount;
         }
@@ -58,9 +58,11 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
 
 
-        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default) => throw new NotImplementedException();
+        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default) =>
+                throw new NotImplementedException($"Rectangle is not supported yet. Convert it to Path first.)");
 
-        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default) => throw new NotImplementedException();
+        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default) =>
+                throw new NotImplementedException($"Ellipse is not supported yet. Convert it to Path first.)");
 
     }
 }

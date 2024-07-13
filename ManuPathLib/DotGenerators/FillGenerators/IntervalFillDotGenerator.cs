@@ -5,7 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ManuPath.Figures;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
 using ManuPath.Maths;
 
 namespace ManuPath.DotGenerators.FillGenerators
@@ -38,6 +38,7 @@ namespace ManuPath.DotGenerators.FillGenerators
         /// <param name="randomRadiusMax">Randomization radius on maximum intensity</param>
         public IntervalFillDotGenerator(
             IFigure figure,
+            bool transform,
             Vector2 intervalMin,
             Vector2 intervalMax,
             Vector2 randomRadiusMin = default,
@@ -49,8 +50,11 @@ namespace ManuPath.DotGenerators.FillGenerators
             _intervalMax = intervalMax;
             _randomRadiusMin = randomRadiusMin;
             _randomRadiusMax = randomRadiusMax;
-            _figure = figure;
-            _pathbounds = _figure.Bounds;
+
+            // TODO: implement ellipse and rectangle
+            _figure = figure.ToPath(transform);
+
+            _pathbounds = _figure.GetBounds();
         }
 
 
@@ -83,7 +87,7 @@ namespace ManuPath.DotGenerators.FillGenerators
             }
             else
             {
-                throw new NotImplementedException(_figure.GetType().Name);
+                throw new NotImplementedException($"Figure {_figure.GetType().Name} is not supported yet. Convert it to Path first.)");
             }
 
             return new[] { new GeneratedDots()

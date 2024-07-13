@@ -1,89 +1,106 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using System.Numerics;
-using ManuPath.Figures.Primitives;
+using ManuPath.Extensions;
+using ManuPath.Figures.PathPrimitives;
+using ManuPath.Maths;
+using ManuPath.Transforms;
 
 namespace ManuPath.Figures
 {
     public class Rectangle : IFigure
     {
-        public Rectangle(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+        public Rectangle() { }
+
+        public Rectangle(float x, float y, float width, float height)
         {
-            P1 = p1;
-            P2 = p2;
-            P3 = p3;
-            P4 = p4;
-        }
-        
-        public Rectangle(Vector2 pos, Vector2 size)
-        {
-            P1 = pos;
-            P2 = new Vector2(pos.X + size.X, pos.Y);
-            P3 = new Vector2(pos.X + size.X, pos.Y + size.Y);
-            P4 = new Vector2(pos.X, pos.Y + size.Y);
+            Pos = new Vector2(x, y);
+            Size = new Vector2(width, height);
         }
 
-        public Vector2 P1 { get; private set; }
-        public Vector2 P2 { get; private set; }
-        public Vector2 P3 { get; private set; }
-        public Vector2 P4 { get; private set; }
+        public Vector2 Pos { get; private set; }
 
-        public float Width => P2.X - P1.X;
+        public Vector2 Size { get; set; }
 
-        public float Height => P2.Y - P1.Y;
+        public float Left => Pos.X;
+        public float Top => Pos.Y;
+        public float Right => Pos.X + Size.X;
+        public float Bottom => Pos.Y + Size.Y;
+        public float Width => Size.X;
+        public float Height => Size.Y;
 
-        public Vector2 FirstPoint => P1;
+        public Vector2 FirstPoint => Pos;
 
-        public Vector2 LastPoint => P4;
+        public Vector2 LastPoint => Pos;
 
-        public RectangleF Bounds => new RectangleF(P1.X, P1.Y, Width, Height);
+        public RectangleF GetBounds()
+        {
+            return new RectangleF(Pos.X, Pos.Y, Size.X, Size.Y);
+        }
+
+        public ITransform[] Transforms { get; set; }
+
+        public IFigure Transform()
+        {
+            if (Transforms?.Any(t => t is MatrixTransform || t is RotateTransform) == true)
+            {
+                return ToPath(true);
+            }
+            else
+            {
+                var rect = (Rectangle)Clone();
+                foreach (var trans in Transforms.EmptyIfNull())
+                {
+                    var pivot = rect.Pos;
+                    rect.Pos = trans.Transform(pivot, rect.Pos);
+                    rect.Size = trans.Transform(pivot, rect.Size);
+                }
+                rect.Transforms = null;
+                return rect;
+            }
+        }
 
         public string Id { get; set; }
 
         public Fill Fill { get; set; }
         public Stroke Stroke { get; set; }
 
-        public override bool Equals(object obj)
-        {
-            return obj is Rectangle rectangle &&
-                   P1.Equals(rectangle.P1) &&
-                   P2.Equals(rectangle.P2) &&
-                   P3.Equals(rectangle.P3) &&
-                   P4.Equals(rectangle.P4);
-        }
-
-        public bool Equals(IPathPrimitive other) => Equals((object)other);
-
-        public void Reverse()
-        {
-            (P1, P2, P3, P4) = (P4, P3, P2, P1);
-        }
+        public void Reverse() { }
 
         public object Clone()
         {
-            return new Rectangle(P1, P2, P3, P4)
-            {
-                Id = Id,
-                Fill = Fill?.Clone(),
-                Stroke = Stroke?.Clone()
-            };
-        }
-
-        public Path ToPath()
-        {
-            return new Path()
+            return new Rectangle()
             {
                 Id = Id,
                 Fill = Fill?.Clone(),
                 Stroke = Stroke?.Clone(),
-                Primitives = new[] 
-                {
-                    new Segment(P1, P2),
-                    new Segment(P2, P3),
-                    new Segment(P3, P4),
-                    new Segment(P4, P1)
-                }
+                Pos = Pos,
+                Size = Size
             };
+        }
+
+        public IFigure ToPath(bool transformed)
+        {
+            var segments = CommonMath.GetRectangleSegments(new RectangleF(Pos.X, Pos.Y, Size.X, Size.Y))
+                .Select(s => new Segment(s.p1, s.p2))
+                .ToArray();
+
+            var path = new Path()
+            {
+                Id = Id,
+                Fill = Fill?.Clone(),
+                Stroke = Stroke?.Clone(),
+                Primitives = segments,
+                Transforms = Transforms
+            };
+
+            if (transformed && Transforms.IsNotNullOrEmpty())
+            {
+                path = (Path) path.Transform();
+            }
+
+            return path;
         }
     }
 

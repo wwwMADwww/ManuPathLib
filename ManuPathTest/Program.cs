@@ -8,11 +8,13 @@ using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 using ManuPath.Figures;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
 using ManuPath.DotGenerators.FillGenerators;
 using ManuPath.DotGenerators.StrokeGenerators;
 using ManuPath.Svg;
-using ManuPath.DotGenerators;
+using ManuPath.Maths;
+using RectangleF = System.Drawing.RectangleF;
+using ManuPath.Extensions;
 
 namespace ManuPathTest
 {
@@ -54,9 +56,20 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\stitches4.svg");
             // var filename = (@"..\..\..\svg\shades.svg");
             // var filename = (@"..\..\..\svg\random 2.svg");
+            // var filename = (@"..\..\..\svg\transform.svg");
+            // var filename = (@"..\..\..\svg\transform 2.svg");
+            var filename = (@"..\..\..\svg\transform 3.svg");
+            // var filename = (@"..\..\..\svg\transform 4.svg");
+            // var filename = (@"..\..\..\svg\transform 5.svg");
 
 
             var vectorImage = new SvgImageReader().ReadSvg(filename);
+
+            vectorImage.Figures = vectorImage.Figures;
+
+            var figures = vectorImage.Figures
+                .Select(f => f.Transform())
+                .ToArray();
 
             #endregion
 
@@ -108,9 +121,9 @@ namespace ManuPathTest
 
             #region preparing strokes
 
-            var startFigure = vectorImage.Figures.First();
+            var startFigure = figures.First();
             var sortedFigures = new List<IFigure>() { startFigure };
-            var unsortedFigures = vectorImage.Figures.Skip(1).ToList();
+            var unsortedFigures = figures.Skip(1).ToList();
 
             while (unsortedFigures.Any())
             {
@@ -139,7 +152,7 @@ namespace ManuPathTest
                     }
                 })
                 .OrderBy(x => x.distance)
-                .ToList();
+                .ToArray();
 
                 var p = ordered.First();
                 if (p.reverse)
@@ -152,18 +165,18 @@ namespace ManuPathTest
                 unsortedFigures.Remove(closestPath);
             }
 
-            vectorImage.Figures = sortedFigures.ToArray();
+            figures = sortedFigures.ToArray();
 
             //var strokeConverter = new PrimitiveToNSegmentsConverter(10);
 
             //var segDistance = Math.Max(6/scale.X, 6/scale.Y);
             var strokeDotsDistance = Math.Max(2/scale.X, 2/scale.Y);
             
-            var figuresStrokeDots = vectorImage.Figures
+            var figuresStrokeDots = figures
                 .Where(p => p.Stroke != null)
                 .SelectMany(f =>
                 {
-                    var strokeConverter = new EqualDistanceStrokeDotGenerator(f, strokeDotsDistance - strokeDotsDistance/10, strokeDotsDistance + strokeDotsDistance / 10);
+                    var strokeConverter = new EqualDistanceStrokeDotGenerator(f, false, strokeDotsDistance - strokeDotsDistance/10, strokeDotsDistance + strokeDotsDistance / 10);
                     var dots = strokeConverter.Generate();
                     return dots;
                 })
@@ -188,7 +201,7 @@ namespace ManuPathTest
             //    .ToArray();
 
             // just removing paths without defined fill
-            var figuresWithFill = vectorImage.Figures
+            var figuresWithFill = figures
                 .Where(p => p.Fill != null)
                 .ToArray();
 
@@ -199,7 +212,9 @@ namespace ManuPathTest
 
             var figuresFills = figuresWithFill
                 //.Select(p => new RandomDotsFillGenerator(1000, true, true, p).GenerateFill())
-                .Select(p => new IntervalFillDotGenerator(p,
+                .SelectMany(p => new IntervalFillDotGenerator(
+                    p,
+                    false,
                     new Vector2(0.2f, 0.2f) * fillscale,
                     new Vector2(0.05f, 0.05f) * fillscale,
                     new Vector2(0.4f, 0.4f) * fillscale,
@@ -214,19 +229,19 @@ namespace ManuPathTest
 
             // bounding boxes
             // var pathBounds = pathsSegments
-            var figuresBounds = vectorImage.Figures
+            var figuresBounds = figures
                 .Where(f => f.Stroke != null)
                 .Select(f => 
                 {
-                    var bounds = f.Bounds;
+                    var bounds = f.GetBounds();
 
-                    var rect = new Rectangle(
-                        new Vector2(bounds.X, bounds.Y),
-                        new Vector2(bounds.Width, bounds.Height))
+                    var c = f.Stroke.Color;
+
+                    var rect = new Rectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height)
                     { 
-                        Stroke = f.Stroke.Clone()
+                        Stroke = new Stroke() { Color = DColor.FromArgb(96, c.R, c.G, c.B) }
                     };
-            
+
                     return rect;
                 })
                 .ToArray();
@@ -312,7 +327,7 @@ namespace ManuPathTest
 
 
             // primitives first and last points
-            var figureEndsMarkPaths = vectorImage.Figures
+            var figureEndsMarkPaths = figures
                 .SelectMany(figure => 
                 {
                     if (figure is Path path)
@@ -329,7 +344,7 @@ namespace ManuPathTest
                 {
                     var crossPath = new Path();
 
-                    crossPath.Stroke = new Stroke() { Color = DColor.FromArgb(65, 255, 128, 0) };
+                    crossPath.Stroke = new Stroke() { Color = DColor.FromArgb(192, 255, 128, 0) };
 
                     var points = new List<Vector2>();
 
@@ -348,7 +363,7 @@ namespace ManuPathTest
 
             var prevLast = new Vector2();
 
-            var pathJumpSegments = vectorImage.Figures
+            var pathJumpSegments = figures
                 .Where(p => p.Stroke != null)
                 .SelectMany(figure =>
                 {
@@ -438,7 +453,7 @@ namespace ManuPathTest
             var vaSegments = figuresStrokeDots.Select(p => Vector2ToVertexDotArray(p.Dots, p.Color)).ToArray();
             //var vaSegments = pathsFillSegs.Select(p => PathToVertexLinesArray(p)).ToArray();
 
-            var vaBounds = figuresBounds.Select(p => PathToVertexLinesArray(p.ToPath())).ToArray();
+            var vaBounds = figuresBounds.Select(p => PathToVertexLinesArray((Path)p.ToPath(true))).ToArray();
 
             // var vaMarks = new Func<int, VertexArray[]>(i => pathMarks(i).Select(p => PathToVertexLinesArray(p)).ToArray());
             var vaMarks = figureEndsMarkPaths.Select(p => PathToVertexLinesArray(p)).ToArray();
@@ -450,17 +465,13 @@ namespace ManuPathTest
 
             // 1 uint square for debugging
             var va1u = new VertexArray(PrimitiveType.Lines);
-            va1u.Append(new Vertex(new Vector2f(0, 0), Color.Red));
-            va1u.Append(new Vertex(new Vector2f(1, 0), Color.Red));
 
-            va1u.Append(new Vertex(new Vector2f(1, 0), Color.Red));
-            va1u.Append(new Vertex(new Vector2f(1, 1), Color.Red));
-
-            va1u.Append(new Vertex(new Vector2f(1, 1), Color.Red));
-            va1u.Append(new Vertex(new Vector2f(0, 1), Color.Red));
-
-            va1u.Append(new Vertex(new Vector2f(0, 1), Color.Red));
-            va1u.Append(new Vertex(new Vector2f(0, 0), Color.Red));
+            var unitSquare = CommonMath.GetRectangleSegments(new RectangleF(0, 0, 1, 1))
+                .Each(s =>
+                {
+                    va1u.Append(new Vertex(new Vector2f(s.p1.X, s.p1.Y), Color.Red));
+                    va1u.Append(new Vertex(new Vector2f(s.p2.X, s.p2.Y), Color.Red));
+                });
 
             #endregion convert everything to SFML entities
 
@@ -489,38 +500,37 @@ namespace ManuPathTest
 
                 window.Draw(va1u, renderStates);
 
+                // foreach (var poly in vaMarks(counter++))
 
+                // start and end marks
+                foreach (var poly in vaMarks) window.Draw(poly, renderStates);
+
+                // bounding boxes
+                foreach (var poly in vaBounds) window.Draw(poly, renderStates);
+
+                // update fill
                 fillsw.Start();
-                var vaFills = figuresFills.SelectMany(pp => pp.Select(p => Vector2ToVertexDotArray(p.Dots, p.Color))).ToArray();
+
+                var vaFills = figuresFills
+                    .Select(p => Vector2ToVertexDotArray(p.Dots, p.Color))
+                    .ToArray();
+
+                foreach (var dots in vaFills) window.Draw(dots, renderStates); // window.Draw() time is negligible
+
                 fillsw.Stop();
 
-                // foreach (var poly in vaMarks(counter++))
-                
-                // foreach (var poly in vaMarks) window.Draw(poly, renderStates);
 
-                // foreach (var poly in vaBounds) window.Draw(poly, renderStates);
+                foreach (var poly in vaSegments) window.Draw(poly, renderStates);
 
-
-                foreach (var dots in vaFills)
-                {
-                    window.Draw(dots, renderStates);
-                }
-
-                foreach (var poly in vaSegments)
-                {
-                    window.Draw(poly, renderStates);
-                }
-
-                window.Draw(vaPathJumps, renderStates);
-
+                // jump lines between elements
+                // window.Draw(vaPathJumps, renderStates);
 
                 var mousepos = Mouse.GetPosition(window);
                 var mousecoords = new Vector2(mousepos.X, mousepos.Y) / scale2;
 
-
                 window.Display();
 
-                vaFills.ToList().ForEach(va => va.Dispose());
+                vaFills.Each(va => va.Dispose());
 
                 fps++;
                 fpstime2 = DateTime.Now;

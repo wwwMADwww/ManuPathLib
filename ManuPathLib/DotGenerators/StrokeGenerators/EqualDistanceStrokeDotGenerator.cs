@@ -4,7 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ManuPath.Figures;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
 using ManuPath.Maths;
 
 namespace ManuPath.DotGenerators.StrokeGenerators
@@ -19,10 +19,11 @@ namespace ManuPath.DotGenerators.StrokeGenerators
         private readonly float _deltaTKoeff2;
 
         public EqualDistanceStrokeDotGenerator(
-            IFigure figure,
+            IFigure figure, 
+            bool transform,
             float pointDistanceMin, float pointDistanceMax,
             float initialDeltaT = 0.1f, float initialDeltaTKoeff = 2f, float deltaTKoeff2 = 1.2f)
-            : base(figure)
+            : base(figure, transform)
         {
             _pointDistanceMin = pointDistanceMin;
             _pointDistanceMax = pointDistanceMax;
@@ -60,14 +61,11 @@ namespace ManuPath.DotGenerators.StrokeGenerators
                     p1 = prevPoint;
             }
 
-
             var t = 0f;
             var dt = _initialDeltaT;
 
-
             while (true)
             {
-
                 var p2 = default(Vector2);
 
                 var prevDiv = false;
@@ -223,8 +221,6 @@ namespace ManuPath.DotGenerators.StrokeGenerators
         protected override Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default) => throw new NotImplementedException();
 
         protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default) => throw new NotImplementedException();
-
-
 
     }
 }

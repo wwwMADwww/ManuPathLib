@@ -5,7 +5,8 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ManuPath.Extensions;
-using ManuPath.Figures.Primitives;
+using ManuPath.Figures.PathPrimitives;
+using ManuPath.Transforms;
 
 namespace ManuPath.Figures
 {
@@ -19,18 +20,31 @@ namespace ManuPath.Figures
         public Fill Fill { get; set; }
 
         public Stroke Stroke { get; set; }
-        
 
-        public RectangleF Bounds
+        public RectangleF GetBounds()
         {
-            get
-            {
-                var allbounds = Primitives.Select(p => p.Bounds).DefaultIfEmpty(RectangleF.Empty).ToArray();
-                var (xmin, ymin) = (allbounds.Min(r => r.Left), allbounds.Min(r => r.Top));
-                var (xmax, ymax) = (allbounds.Max(r => r.Right), allbounds.Max(r => r.Bottom));
+            var allbounds = Primitives
+                .Select(p => p.GetBounds())
+                .DefaultIfEmpty(RectangleF.Empty)
+                .ToArray();
 
-                return new RectangleF(xmin, ymin, xmax - xmin, ymax - ymin);
-            }
+            var (xmin, ymin) = (allbounds.Min(r => r.Left) , allbounds.Min(r => r.Top));
+            var (xmax, ymax) = (allbounds.Max(r => r.Right), allbounds.Max(r => r.Bottom));
+
+            return new RectangleF(xmin, ymin, xmax - xmin, ymax - ymin);
+        }
+
+        public ITransform[] Transforms { get; set; }
+
+        public IFigure Transform()
+        {
+            var path = CreateEmpty();
+
+            path.Primitives = Primitives
+                .Select(p => p.Transform(Transforms.EmptyIfNull()) )
+                .ToArray();
+
+            return path;
         }
 
         public Vector2 FirstPoint => Primitives.First().FirstPoint;
@@ -57,14 +71,22 @@ namespace ManuPath.Figures
             };
         }
 
-        public Path ToPath()
+        public object Clone() => ToPath(false);
+
+        public IFigure ToPath(bool transformed)
         {
             return new Path()
             {
                 Id = Id,
-                Fill = Fill,
-                Stroke = Stroke,
-                Primitives = Primitives // TODO: deep copy?
+                Fill = Fill?.Clone(),
+                Stroke = Stroke?.Clone(),
+                Primitives = Primitives
+                    .Select(p => (transformed && Transforms.IsNotNullOrEmpty()) 
+                        ? p.Transform(Transforms) 
+                        : p.Clone())
+                    .Cast<IPathPrimitive>()
+                    .ToArray(),
+                Transforms = transformed ? null : Transforms
             };
         }
     }
