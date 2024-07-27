@@ -63,7 +63,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
                 if (primitive is Segment segment)
                 {
-                    segs = SegmentDivide(segment, lastPoint ?? default);
+                    segs = SegmentDivide(segment, lastPoint);
 
                     // if (!pathStart.HasValue)
                     //     pathStart = segs.First().FirstPoint; // segment.P1;
@@ -71,7 +71,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
                 }
                 else if (primitive is CubicBezier cb)
                 {
-                    segs = CubicBezierToSegments(cb, lastPoint ?? default);
+                    segs = CubicBezierToSegments(cb, lastPoint);
 
                     //if (!pathStart.HasValue)
                     //    pathStart = segs.First().FirstPoint; // cb.P1;
@@ -112,13 +112,13 @@ namespace ManuPath.DotGenerators.StrokeGenerators
         }
 
 
-        protected abstract Vector2[] CubicBezierToSegments(CubicBezier cubicBezier, Vector2 prevPoint = default);
+        protected abstract Vector2[] CubicBezierToSegments(CubicBezier cubicBezier, Vector2? prevPoint = null);
 
-        protected abstract Vector2[] SegmentDivide(Segment segment, Vector2 prevPoint = default);
+        protected abstract Vector2[] SegmentDivide(Segment segment, Vector2? prevPoint = null);
 
-        protected abstract Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default);
+        protected abstract Vector2[] RectangleDivide(Rectangle rect, Vector2? prevPoint = null);
 
-        protected abstract Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default);
+        protected abstract Vector2[] EllipseDivide(Ellipse ellipse, Vector2? prevPoint = null);
 
     }
 }

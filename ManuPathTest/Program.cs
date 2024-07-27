@@ -50,6 +50,7 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\solidsquares.svg");
             // var filename = (@"..\..\..\svg\bubles.svg");
             // var filename = (@"..\..\..\svg\not beziers.svg");
+            var filename = (@"..\..\..\svg\ellipses.svg");
             // var filename = (@"..\..\..\svg\stitches.svg");
             // var filename = (@"..\..\..\svg\stitches2.svg");
             // var filename = (@"..\..\..\svg\stitches3.svg");
@@ -61,7 +62,7 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\transform 3.svg");
             // var filename = (@"..\..\..\svg\transform 4.svg");
             // var filename = (@"..\..\..\svg\transform 5.svg");
-            var filename = (@"..\..\..\svg\opens.svg");
+            // var filename = (@"..\..\..\svg\opens.svg");
 
 
             var vectorImage = new SvgImageReader().ReadSvg(filename);

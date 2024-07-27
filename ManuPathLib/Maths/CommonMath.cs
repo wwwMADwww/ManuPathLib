@@ -20,6 +20,9 @@ namespace ManuPath.Maths
 
         public static float Distance(Vector2 p1, Vector2 p2) => (float)Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
 
+        public static float? Distance(Vector2? p1, Vector2? p2) => p1.HasValue && p2.HasValue
+            ? (float?)Math.Sqrt(Math.Pow(p2.Value.X - p1.Value.X, 2) + Math.Pow(p2.Value.Y - p1.Value.Y, 2))
+            : null;
 
         public static bool IsInRange(float start, float end, float value)
         {
@@ -355,6 +358,164 @@ namespace ManuPath.Maths
             var rotated = CircleCoord(center, distance, oldAngle + angle);  
             return rotated;
         }
+
+
+        /// <summary>
+        /// Convert continuous function f(T) to array of dots
+        /// </summary>
+        /// <param name="startT">start value of function argument</param>
+        /// <param name="endT">end value of function argument</param>
+        /// <param name="distanceMin">minimal acceptable distance betweet dots</param>
+        /// <param name="distanceMax">maximal acceptable distance betweet dots</param>
+        /// <param name="initialDeltaT">initial value to increase function argument on each iteration</param>
+        /// <param name="prevPoint">if not null, distance is calculated from this point. Otherwise distance is calculated from f(startT)</param>
+        /// <param name="curveFunc">f(T). Curve function of argument T, returning X and Y coordinates</param>
+        public static Vector2[] CurveToEquidistantDots(
+            float startT, 
+            float endT, 
+            float distanceMin, 
+            float distanceMax,
+            float initialDeltaT, 
+            Vector2? prevPoint,
+            Func<float, Vector2?> curveFunc,
+            float initialDeltaTKoeff = 2f, 
+            float deltaTKoeff2 = 1.2f)
+        {
+
+            var res = new List<Vector2>();
+
+            // debug, statistics
+            // var repeatEvent = 0;
+            // var repeatTotal = 0;
+            // var repeatMax = 0;
+
+
+            // TODO: first and last points
+
+            // res.Add(bc.P1);
+
+            var p1 = curveFunc(startT);
+
+            if (prevPoint.HasValue)
+            {
+                var pd = CommonMath.Distance(p1, prevPoint.Value);
+
+                if (pd <= distanceMax)
+                    p1 = prevPoint.Value;
+            }
+
+            var t = 0f;
+            var dt = initialDeltaT;
+
+            while (true)
+            {
+                Vector2? p2;
+
+                var prevDiv = false;
+                var prevMul = false;
+
+                var dtkoeff2 = deltaTKoeff2;
+                var dtkoeff = initialDeltaTKoeff;
+
+                // var repeat = -1;
+
+                // перебор значений t так, чтобы расстояние между точками было не менее r1 и не более r2
+                while (true)
+                {
+                    // repeat++;
+
+                    var t2 = t + dt;
+
+                    if (t2 >= 1.0f)
+                        t2 = 1.0f;
+
+                    p2 = curveFunc(t2);
+
+                    if (p2 == null)
+                    {
+                        if (t == 1.0f) break;
+
+                        t = t2;
+                        continue;
+                    }
+
+                    if (p1 == null)
+                    { 
+                        p1 = p2;
+                        t = t2;
+                        continue;
+                    }
+
+                    var d = CommonMath.Distance(p1, p2);
+
+                    if (d < distanceMin)
+                    {
+                        // если отрезок слишком короткий, но мы уже уперлись в последнюю точку, то пропускаем действие.
+                        if (t2 < 1.0f)
+                        {
+                            if (prevDiv)
+                                dtkoeff /= dtkoeff2;
+
+                            dt *= dtkoeff;
+                            prevMul = true;
+                            prevDiv = false;
+
+                            continue;
+                        }
+                    }
+                    else if (d > distanceMax)
+                    {
+                        if (prevMul)
+                            dtkoeff *= dtkoeff2;
+
+                        dt /= dtkoeff;
+                        prevDiv = true;
+                        prevMul = false;
+
+                        continue;
+                    }
+
+                    t = t2;
+                    // Console.WriteLine($"t {t}, d {d}");
+
+                    dtkoeff = initialDeltaTKoeff;
+                    dtkoeff2 = deltaTKoeff2;
+                    // x4 less repeatTotal and x2 less repeatEvent when disabled
+                    // dt = initialDeltaT;
+
+                    prevDiv = prevMul = false;
+                    break;
+
+                } // while repeat
+
+
+                // if (repeat > 0)
+                // {
+                //     repeatEvent++;
+                //     repeatTotal += repeat;
+                //     if (repeatMax < repeat)
+                //         repeatMax = repeat;
+                // }
+
+                if (t >= 1)
+                    break;
+                // если отрезок слишком короткий, то не добавляем его
+
+                res.Add(p2.Value);
+
+                p1 = p2;
+
+            } // while elements
+
+
+            // res.Add(new Segment(p1, cb.P2));
+
+
+            return res.ToArray();
+        }
+
+
+
     }
 
 }

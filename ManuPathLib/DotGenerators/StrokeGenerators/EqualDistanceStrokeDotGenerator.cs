@@ -35,132 +35,26 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
 
 
-        protected override Vector2[] CubicBezierToSegments(CubicBezier cb, Vector2 prevPoint = default)
+        protected override Vector2[] CubicBezierToSegments(CubicBezier cb, Vector2? prevPoint = null)
         {
-
-            var res = new List<Vector2>() { cb.P1 };
-
-            // debug, statistics
-            // var repeatEvent = 0;
-            // var repeatTotal = 0;
-            // var repeatMax = 0;
-
-
-            // TODO: first and last points
-
-            // res.Add(bc.P1);
-
-            var p1 = cb.P1;
-
-            if (prevPoint != default)
-            {
-                var pd = CommonMath.Distance(p1, prevPoint);
-
-                // if (_pointDistanceMin <= pd && pd <= _pointDistanceMax)
-                if (pd <= _pointDistanceMax)
-                    p1 = prevPoint;
-            }
-
-            var t = 0f;
-            var dt = _initialDeltaT;
-
-            while (true)
-            {
-                var p2 = default(Vector2);
-
-                var prevDiv = false;
-                var prevMul = false;
-
-                var dtkoeff2 = _deltaTKoeff2;
-                var dtkoeff = _initialDeltaTKoeff;
-
-                // var repeat = -1;
-
-                // перебор значений t так, чтобы расстояние между точками было не менее r1 и не более r2
-                while (true)
-                {
-                    // repeat++;
-
-                    var t2 = t + dt;
-
-                    if (t2 >= 1.0f)
-                        t2 = 1.0f;
-
-                    p2 = new Vector2(
-                        BezierMath.BezierCoord(t2, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X),
-                        BezierMath.BezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y));
-
-                    var d = CommonMath.Distance(p1, p2);
-
-                    if (d < _pointDistanceMin)
-                    {
-                        // если отрезок слишком короткий, но мы уже уперлись в последнюю точку, то пропускаем действие.
-                        if (t2 < 1.0f)
-                        {
-                            if (prevDiv)
-                                dtkoeff /= dtkoeff2;
-
-                            dt *= dtkoeff;
-                            prevMul = true;
-                            prevDiv = false;
-
-                            continue;
-                        }
-                    }
-                    else if (d > _pointDistanceMax)
-                    {
-                        if (prevMul)
-                            dtkoeff *= dtkoeff2;
-
-                        dt /= dtkoeff;
-                        prevDiv = true;
-                        prevMul = false;
-
-                        continue;
-                    }
-
-                    t = t2;
-                    // Console.WriteLine($"t {t}, d {d}");
-
-                    dtkoeff = _initialDeltaTKoeff;
-                    dtkoeff2 = _deltaTKoeff2;
-                    // x4 less repeatTotal and x2 less repeatEvent when disabled
-                    // dt = initialDeltaT;
-
-                    prevDiv = prevMul = false;
-                    break;
-
-                } // while repeat
-
-
-                // if (repeat > 0)
-                // {
-                //     repeatEvent++;
-                //     repeatTotal += repeat;
-                //     if (repeatMax < repeat)
-                //         repeatMax = repeat;
-                // }
-
-                if (t >= 1)
-                    break;
-                // если отрезок слишком короткий, то не добавляем его
-
-                res.Add(p2);
-
-                p1 = p2;
-
-            } // while elements
-
-
-            // res.Add(new Segment(p1, cb.P2));
-
-
-            return res.ToArray();
+            var dots = CommonMath.CurveToEquidistantDots(
+                startT: 0f, 
+                endT: 1f, 
+                _pointDistanceMin, 
+                _pointDistanceMax, 
+                _initialDeltaT, 
+                prevPoint,
+                t => BezierMath.BezierCoords(t, cb.P1, cb.C1, cb.C2, cb.P2),
+                _initialDeltaTKoeff, 
+                _deltaTKoeff2
+                );
+            
+            return dots;
         }
 
 
 
-        protected override Vector2[] SegmentDivide(Segment segment, Vector2 prevPoint = default)
+        protected override Vector2[] SegmentDivide(Segment segment, Vector2? prevPoint = null)
         {
             var res = new List<Vector2>() ;
 
@@ -169,13 +63,13 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
             Vector2 start = segment.P1;
 
-            if (prevPoint != default)
+            if (prevPoint.HasValue)
             {
-                var prevdistance = CommonMath.Distance(start, prevPoint);
+                var prevdistance = CommonMath.Distance(start, prevPoint.Value);
 
                 if (prevdistance < _pointDistanceMin || CommonMath.IsFloatEquals(prevdistance, _pointDistanceMin))
                 {
-                    var points = CommonMath.LineCircleIntersections(prevPoint, _pointDistanceMin, segment.P1, segment.P2);
+                    var points = CommonMath.LineCircleIntersections(prevPoint.Value, _pointDistanceMin, segment.P1, segment.P2);
 
                     var ddx1 = float.MaxValue;
 
@@ -218,9 +112,9 @@ namespace ManuPath.DotGenerators.StrokeGenerators
             return res.ToArray();
         }
 
-        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default) => throw new NotImplementedException();
+        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2? prevPoint = null) => throw new NotImplementedException();
 
-        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default) => throw new NotImplementedException();
+        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2? prevPoint = null) => throw new NotImplementedException();
 
     }
 }

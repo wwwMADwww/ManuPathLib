@@ -21,6 +21,12 @@ namespace ManuPath.Maths
             );
         }
 
+        public static Vector2 BezierCoords(float t, Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)
+        {
+            return new Vector2(
+                BezierMath.BezierCoord(t, p1.X, c1.X, c2.X, p2.X),
+                BezierMath.BezierCoord(t, p1.Y, c1.Y, c2.Y, p2.Y));
+        }
 
 
 
@@ -161,29 +167,67 @@ namespace ManuPath.Maths
             return new[] { s1, s2 }.Where(s => s.HasValue).Select(s => s.Value).ToArray();
         }
 
-        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)[] CreateBeziersFromEllipse(Vector2 center, Vector2 radius)
+        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2) CreateBezierFromArc
+            (Vector2 center, Vector2 radius, double angleStart, double angleEnd)
         {
-            // https://stackoverflow.com/a/57007406
-            // https://jsfiddle.net/nooorz24/2u9forep/12/
+            // https://pomax.github.io/bezierinfo/#circles_cubic
+            // https://pomax.github.io/bezierinfo/chapters/circles_cubic/arc-approximation.js
+            // modified for two angles
 
-            static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2) CreateQuarter(float centerX, float centerY, float radiusX, float radiusY)
+            var da = angleEnd - angleStart;
+
+            //var k = (4.0 / 3.0) * Math.Tan(da / 4.0);
+            var k = (4.0 * Math.Tan(da / 4.0)) / 3.0;
+
+            var cosAngleStart = Math.Cos(angleStart);
+            var sinAngleStart = Math.Sin(angleStart);
+
+            var cosAngleEnd = Math.Cos(angleEnd);
+            var sinAngleEnd = Math.Sin(angleEnd);
+
+            var p1 = new Vector2(
+                x: (float)(center.X + radius.X * cosAngleStart),
+                y: (float)(center.Y + radius.Y * sinAngleStart)
+            );
+
+            var c1 = new Vector2(
+                x: (float) (center.X + radius.X * (cosAngleStart - k * sinAngleStart)),
+                y: (float) (center.Y + radius.Y * (sinAngleStart + k * cosAngleStart))
+            );
+
+            var c2 = new Vector2(
+                x: (float)(center.X + radius.X * (cosAngleEnd + k * sinAngleEnd)),
+                y: (float)(center.Y + radius.Y * (sinAngleEnd - k * cosAngleEnd))
+            );
+
+            var p2 = new Vector2( 
+                x: (float)(center.X + radius.X * cosAngleEnd), 
+                y: (float)(center.Y + radius.Y * sinAngleEnd)
+            );
+            
+            return (p1, c1, c2, p2);
+        }
+
+        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)[] CreateBeziersFromEllipse(Vector2 center, Vector2 radius, int arcsNum = 4)
+        {
+            if (arcsNum < 2) throw new ArgumentOutOfRangeException(nameof(arcsNum), arcsNum, "Arcs number can't be less than 2.");
+
+            var arcs = new List<(Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)>(arcsNum);
+
+            var a1 = 0.0;
+
+            for (int i = 1; i <= arcsNum; i++)
             {
-                // TODO: implement for arcs https://pomax.github.io/bezierinfo/#circles_cubic
-                return (
-                    new Vector2(centerX - (radiusX), centerY - (0)),
-                    new Vector2(centerX - (radiusX), centerY - (0.552f * radiusY)),
-                    new Vector2(centerX - (0.552f * radiusX), centerY - (radiusY)),
-                    new Vector2(centerX - (0), centerY - (radiusY))
-                );
+                var a2 = ((Math.PI * 2) / arcsNum) * i;
+
+                var curve = CreateBezierFromArc(center, radius, a1, a2);
+
+                arcs.Add(curve);
+
+                a1 = a2;
             }
 
-            return new[]
-            {
-                CreateQuarter(center.X, center.Y, -radius.X,  radius.Y),
-                CreateQuarter(center.X, center.Y,  radius.X,  radius.Y),
-                CreateQuarter(center.X, center.Y,  radius.X, -radius.Y),
-                CreateQuarter(center.X, center.Y, -radius.X, -radius.Y)
-            };
+            return arcs.ToArray();
         }
 
 

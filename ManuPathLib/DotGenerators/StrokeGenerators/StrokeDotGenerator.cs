@@ -20,7 +20,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
         }
 
 
-        protected override Vector2[] CubicBezierToSegments(CubicBezier cb, Vector2 prevPoint = default)
+        protected override Vector2[] CubicBezierToSegments(CubicBezier cb, Vector2? prevPoint = null)
         {
             var res = new List<Vector2>(_segmentCount) { cb.P1 };
 
@@ -40,7 +40,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
 
 
-        protected override Vector2[] SegmentDivide(Segment segment, Vector2 prevPoint = default)
+        protected override Vector2[] SegmentDivide(Segment segment, Vector2? prevPoint = null)
         {
             var res = new List<Vector2>(_segmentCount) { segment.P1 };
 
@@ -58,10 +58,10 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
 
 
-        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2 prevPoint = default) =>
+        protected override Vector2[] RectangleDivide(Rectangle rect, Vector2? prevPoint = null) =>
                 throw new NotImplementedException($"Rectangle is not supported yet. Convert it to Path first.)");
 
-        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2 prevPoint = default) =>
+        protected override Vector2[] EllipseDivide(Ellipse ellipse, Vector2? prevPoint = null) =>
                 throw new NotImplementedException($"Ellipse is not supported yet. Convert it to Path first.)");
 
     }
