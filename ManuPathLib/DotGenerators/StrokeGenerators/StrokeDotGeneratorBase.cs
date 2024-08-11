@@ -20,7 +20,16 @@ namespace ManuPath.DotGenerators.StrokeGenerators
             }
 
             // TODO: implement ellipse and rectangle
-            _figure = figure.ToPath(transform);
+            _figure = (Path) figure.ToPath(transform);
+            //var primitives = ((Path)_figure).Primitives;
+            //for (int i = 0; i < primitives.Length; i++)
+            //{ 
+            //    var p = primitives[i];
+            //    if (p is QuadraticBezier qb)
+            //    { 
+            //        primitives[i] = qb.ToCubicBezier();
+            //    }
+            //}
         }
 
         public GeneratedDots[] Generate()
@@ -64,18 +73,14 @@ namespace ManuPath.DotGenerators.StrokeGenerators
                 if (primitive is Segment segment)
                 {
                     segs = SegmentDivide(segment, lastPoint);
-
-                    // if (!pathStart.HasValue)
-                    //     pathStart = segs.First().FirstPoint; // segment.P1;
-                    // lastPoint = segs.Last().LastPoint; // segment.P2;
                 }
                 else if (primitive is CubicBezier cb)
                 {
                     segs = CubicBezierToSegments(cb, lastPoint);
-
-                    //if (!pathStart.HasValue)
-                    //    pathStart = segs.First().FirstPoint; // cb.P1;
-                    //lastPoint = segs.Last().LastPoint; // cb.P2;
+                }
+                else if (primitive is QuadraticBezier qb)
+                {
+                    segs = QuadraticBezierToSegments(qb, lastPoint);
                 }
                 else
                 {
@@ -102,7 +107,6 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
                 if (lastPoint.Value != lastPrim.LastPoint)
                 {
-                    //dots.Add(new Segment(lastPoint.Value, lastPrim.LastPoint));
                     dots.Add(lastPrim.LastPoint);
                     lastPoint = lastPrim.LastPoint;
                 }
@@ -113,6 +117,8 @@ namespace ManuPath.DotGenerators.StrokeGenerators
 
 
         protected abstract Vector2[] CubicBezierToSegments(CubicBezier cubicBezier, Vector2? prevPoint = null);
+
+        protected abstract Vector2[] QuadraticBezierToSegments(QuadraticBezier quadBezier, Vector2? prevPoint = null);
 
         protected abstract Vector2[] SegmentDivide(Segment segment, Vector2? prevPoint = null);
 

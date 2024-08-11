@@ -31,20 +31,25 @@ namespace ManuPath.Figures.PathPrimitives
         {
             // https://eliot-jones.com/2019/12/cubic-bezier-curve-bounding-boxes
 
-            var solX = BezierMath.GetBezierQuadraticRoots(P1.X, C1.X, C2.X, P2.X).Select(t => BezierMath.BezierCoord(t, P1.X, C1.X, C2.X, P2.X));
-            var solY = BezierMath.GetBezierQuadraticRoots(P1.Y, C1.Y, C2.Y, P2.Y).Select(t => BezierMath.BezierCoord(t, P1.Y, C1.Y, C2.Y, P2.Y));
-
-            solX = solX.Concat(new[] { P1.X, P2.X }).ToArray();
-            solY = solY.Concat(new[] { P1.Y, P2.Y }).ToArray();
-
-            var minX = solX.Min();
-            var minY = solY.Min();
-
-            var maxX = solX.Max();
-            var maxY = solY.Max();
+            var solX = BezierMath.CubicBezierQuadRoots(P1.X, C1.X, C2.X, P2.X);
+            var solY = BezierMath.CubicBezierQuadRoots(P1.Y, C1.Y, C2.Y, P2.Y);
 
 
-            return new RectangleF(new PointF(minX, minY), new SizeF(maxX - minX, maxY - minY));
+            var coordsX = solX.Select(t => BezierMath.CubicBezierCoord(t, P1.X, C1.X, C2.X, P2.X));
+            var coordsY = solY.Select(t => BezierMath.CubicBezierCoord(t, P1.Y, C1.Y, C2.Y, P2.Y));
+
+            coordsX = coordsX.Concat(new[] { P1.X, P2.X }).ToArray();
+            coordsY = coordsY.Concat(new[] { P1.Y, P2.Y }).ToArray();
+
+            var minX = coordsX.Min();
+            var minY = coordsY.Min();
+             
+            var maxX = coordsX.Max();
+            var maxY = coordsY.Max();
+            
+            var rect = new RectangleF(new PointF(minX, minY), new SizeF(maxX - minX, maxY - minY));
+
+            return rect;
         }
 
         public IPathPrimitive Transform(ITransform[] transforms)

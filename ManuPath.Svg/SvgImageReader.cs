@@ -20,21 +20,33 @@ namespace ManuPath.Svg
     public class SvgImageReader
     {
 
-        public ManuPathImage ReadSvg(string filename)
+        public static ManuPathImage ReadSvgFile(string filename)
         {
-
-            var figures = new List<IFigure>();
-
             var svg = SvgDocument.Open(filename);
-            
+
             var svgElements = svg.Children.FindSvgElementsOf<SvgGroup>() // layers, groups
                 .SelectMany(g => g.Children)
-                .Where(x => ! (x is SvgGroup))
+                .Where(x => !(x is SvgGroup))
                 .ToArray();
+
+            var figures = ConvertSvgElementsToFigures(svgElements);
+
+            return new ManuPathImage()
+            {
+                Figures = figures,
+                // Deliberately ignoring measurement units.
+                // If size is not right, check ViewBox.
+                Size = new Vector2(svg.Width.Value, svg.Height.Value)
+            };
+        }
+
+        public static IFigure[] ConvertSvgElementsToFigures(SvgElement[] svgElements)
+        {
+            var figures = new List<IFigure>();
 
             foreach (var svgElement in svgElements)
             {
-                IFigure figure;
+                IFigure? figure;
 
                 if (svgElement is SvgPath path)
                 {
@@ -60,30 +72,31 @@ namespace ManuPath.Svg
                         Radius = new Vector2(ellipse.RadiusX.Value, ellipse.RadiusY.Value)
                     };
                 }
+                else if (svgElement is SvgText text)
+                {
+                    Console.WriteLine($"Element id '{svgElement.ID}': type '{svgElement.GetType().Name}' not supported, skipped");
+                    continue;
+                }
                 else
                 {
                     Console.WriteLine($"Element id '{svgElement.ID}': type '{svgElement.GetType().Name}' not supported, skipped");
                     continue;
                 }
 
+                if (figure == null) continue;
+
                 SetCommonProperties(figure, svgElement);
                 figures.Add(figure);
             }
 
-
-            return new ManuPathImage() 
-            {
-                Figures = figures.ToArray(), 
-                Size = new Vector2(svg.ViewBox.Width, svg.ViewBox.Height)
-            };
+            return figures.ToArray();
         }
 
-        private void SetCommonProperties(IFigure figure, SvgElement svgElement)
+        public static void SetCommonProperties(IFigure figure, SvgElement svgElement)
         {
             figure.Id = svgElement.ID;
 
             var fillColor = ((SvgColourServer)svgElement.Fill)?.Colour ?? Color.Transparent;
-            var strokeColor = ((SvgColourServer)svgElement.Stroke)?.Colour ?? Color.Transparent;
 
             figure.Fill = svgElement.Fill == SvgPaintServer.None ? null : new Fill()
             {
@@ -92,6 +105,8 @@ namespace ManuPath.Svg
                     ? FillRule.EvenOdd
                     : FillRule.NonZeroWinding
             };
+
+            var strokeColor = ((SvgColourServer)svgElement.Stroke)?.Colour ?? Color.Transparent;
 
             figure.Stroke = svgElement.Stroke == SvgPaintServer.None ? null : new Stroke()
             {
@@ -102,7 +117,7 @@ namespace ManuPath.Svg
                 .OfType<ISvgTransformable>()
                 .Where(st => st.Transforms.IsNotNullOrEmpty())
                 .Select(st => st.Transforms.AsEnumerable())
-                .Reverse()
+                //.Reverse()
                 .SelectMany(ts => ts)
                 .Select(ConvertTransform)
                 .ToArray();
@@ -110,9 +125,11 @@ namespace ManuPath.Svg
             figure.Transforms = transforms;
         }
 
-        private IFigure ConvertPath(SvgPath svgPath)
+        public static IFigure? ConvertPath(SvgPath svgPath)
         {
             var primitives = new List<IPathPrimitive>();
+
+            Vector2? contourStart = null;
 
             foreach (var svgPathSegment in svgPath.PathData)
             {
@@ -127,20 +144,20 @@ namespace ManuPath.Svg
 
                     primitives.Add(p);
                 }
+                else if (svgPathSegment is SvgQuadraticCurveSegment qb)
+                {
+                    var p = new QuadraticBezier(
+                        new Vector2(qb.Start.X, qb.Start.Y),
+                        new Vector2(qb.ControlPoint.X, qb.ControlPoint.Y),
+                        new Vector2(qb.End.X, qb.End.Y)
+                        )
+                        //.ToCubicBezier()
+                        ;
+                    primitives.Add(p);
+                }
                 else if (svgPathSegment is SvgLineSegment line)
                 {
                     var p = new Segment(new Vector2(line.Start.X, line.Start.Y), new Vector2(line.End.X, line.End.Y));
-                    primitives.Add(p);
-                }
-                else if (svgPathSegment is SvgMoveToSegment move)
-                {
-                    // skip
-                }
-                else if (svgPathSegment is SvgClosePathSegment closePath)
-                {
-                    if (!primitives.Any()) // occurs when path is not line or bezier
-                        continue;
-                    var p = new Segment(primitives.Last().LastPoint, primitives.First().FirstPoint);
                     primitives.Add(p);
                 }
                 else if (svgPathSegment is SvgArcSegment arc)
@@ -148,26 +165,47 @@ namespace ManuPath.Svg
                     // TODO: arcs
                     Console.WriteLine($"Path id '{svgPath.ID}': Arcs not implemented, skipped");
                 }
+                else if (svgPathSegment is SvgClosePathSegment closePath)
+                {
+                    if (!primitives.Any())
+                    {
+                        contourStart = null;
+                        continue;
+                    }
+
+                    var lastPoint = primitives.Last().LastPoint;
+                    if (lastPoint != contourStart)
+                    {
+                        var p = new Segment(primitives.Last().LastPoint, contourStart.Value);
+                        primitives.Add(p);
+                    }
+                    contourStart = null;
+                }
+                else if (svgPathSegment is SvgMoveToSegment move)
+                {
+                    contourStart = new Vector2(move.Start.X, move.Start.Y);
+                }
                 else
                 {
                     Console.WriteLine($"Path id '{svgPath.ID}': element type '{svgPathSegment.GetType().Name}' not supported, skipped");
                 }
             }
 
+            if (primitives.Count == 0)
+            {
+                return null;
+            }
+
             var newPath = new Path()
             {
                 Id = svgPath.ID,
-
                 Primitives = primitives.ToArray(),
             };
 
-            SetCommonProperties(newPath, svgPath);
-
             return newPath;
-
         }
 
-        static ITransform ConvertTransform(SvgTransform svgTransform)
+        public static ITransform ConvertTransform(SvgTransform svgTransform)
         {
             if (svgTransform is SvgTranslate trans)
             {
@@ -190,6 +228,8 @@ namespace ManuPath.Svg
             // }
             else
             {
+                // any transform could be represented as matrix transform
+
                 var m = svgTransform.Matrix.Elements;
 
                 var matrix = new Matrix3x2(

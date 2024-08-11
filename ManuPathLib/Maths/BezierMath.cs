@@ -11,7 +11,7 @@ namespace ManuPath.Maths
     {
 
 
-        public static float BezierCoord(float t, float i0, float i1, float i2, float i3)
+        public static float CubicBezierCoord(float t, float i0, float i1, float i2, float i3)
         {
             return (float)(
                 i0 * Math.Pow(1 - t, 3) +
@@ -21,19 +21,45 @@ namespace ManuPath.Maths
             );
         }
 
-        public static Vector2 BezierCoords(float t, Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)
+        public static Vector2 CubicBezierCoords(float t, Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)
         {
             return new Vector2(
-                BezierMath.BezierCoord(t, p1.X, c1.X, c2.X, p2.X),
-                BezierMath.BezierCoord(t, p1.Y, c1.Y, c2.Y, p2.Y));
+                BezierMath.CubicBezierCoord(t, p1.X, c1.X, c2.X, p2.X),
+                BezierMath.CubicBezierCoord(t, p1.Y, c1.Y, c2.Y, p2.Y));
         }
 
 
-
-        // Now then: given cubic coordinates {pa, pb, pc, pd} find all roots.
-        public static float[] GetBezierCubicRoots(float pa, float pb, float pc, float pd)
+        public static float QuadBezierCoord(float t, float i0, float i1, float i2)
         {
+            // https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves
+            // https://stackoverflow.com/a/5634528
+            return 
+                (1 - t) * (1 - t) * i0 + 
+                2 * (1 - t) * t * i1 + 
+                t * t * i2;
+        }
 
+        public static Vector2 QuadBezierCoords(float t, Vector2 p1, Vector2 c, Vector2 p2)
+        {
+            return new Vector2(
+                BezierMath.QuadBezierCoord(t, p1.X, c.X, p2.X),
+                BezierMath.QuadBezierCoord(t, p1.Y, c.Y, p2.Y));
+        }
+
+        public static float? QuadBezierLinearRoot(double p0, double p1, double p2)
+        {
+            // https://iquilezles.org/articles/bezierbbox/
+
+            var t = (p0 - p1) / (p0 - (2.0f * p1) + p2);
+
+            if (!double.IsNaN(t) && (0 <= t && t <= 1)) return (float) t;
+            else return null;
+        }
+
+
+        public static float[] CubicBezierCubicRoots(float pa, float pb, float pc, float pd)
+        {
+            // Now then: given cubic coordinates {pa, pb, pc, pd} find all roots.
             // https://pomax.github.io/bezierinfo/index.html#extremities
 
             // A helper function to filter for values in the [0,1] interval:
@@ -64,7 +90,7 @@ namespace ManuPath.Maths
                     if (CommonMath.IsFloatEquals(b, 0))
                     {
                         // in fact in fact, there are no solutions.
-                        return new float[0];
+                        return Array.Empty<float>();
                     }
                     // linear solution
                     return new[] { -c / b }.Where(x => Accept(x)).ToArray();
@@ -128,7 +154,7 @@ namespace ManuPath.Maths
         }
 
 
-        public static float[] GetBezierQuadraticRoots(float p0, float p1, float p2, float p3)
+        public static float[] CubicBezierQuadRoots(float p0, float p1, float p2, float p3)
         {
             // https://eliot-jones.com/2019/12/cubic-bezier-curve-bounding-boxes
 
@@ -167,7 +193,21 @@ namespace ManuPath.Maths
             return new[] { s1, s2 }.Where(s => s.HasValue).Select(s => s.Value).ToArray();
         }
 
-        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2) CreateBezierFromArc
+
+
+
+        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2) CubicBezierFromQuad(Vector2 p1, Vector2 c, Vector2 p2)
+        {
+            var c1x = (float)((c.X - p1.X) * 2.0 / 3.0) + p1.X;
+            var c1y = (float)((c.Y - p1.Y) * 2.0 / 3.0) + p1.Y;
+
+            var c2x = (float)((c.X - p2.X) * 2.0 / 3.0) + p2.X;
+            var c2y = (float)((c.Y - p2.Y) * 2.0 / 3.0) + p2.Y;
+
+            return (p1, new Vector2(c1x, c1y), new Vector2(c2x, c2y), p2);
+        }
+
+        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2) CubicBezierFromArc
             (Vector2 center, Vector2 radius, double angleStart, double angleEnd)
         {
             // https://pomax.github.io/bezierinfo/#circles_cubic
@@ -208,7 +248,7 @@ namespace ManuPath.Maths
             return (p1, c1, c2, p2);
         }
 
-        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)[] CreateBeziersFromEllipse(Vector2 center, Vector2 radius, int arcsNum = 4)
+        public static (Vector2 p1, Vector2 c1, Vector2 c2, Vector2 p2)[] CubicBeziersFromEllipse(Vector2 center, Vector2 radius, int arcsNum = 4)
         {
             if (arcsNum < 2) throw new ArgumentOutOfRangeException(nameof(arcsNum), arcsNum, "Arcs number can't be less than 2.");
 
@@ -220,7 +260,7 @@ namespace ManuPath.Maths
             {
                 var a2 = ((Math.PI * 2) / arcsNum) * i;
 
-                var curve = CreateBezierFromArc(center, radius, a1, a2);
+                var curve = CubicBezierFromArc(center, radius, a1, a2);
 
                 arcs.Add(curve);
 

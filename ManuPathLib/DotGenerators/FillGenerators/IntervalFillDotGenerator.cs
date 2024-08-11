@@ -52,7 +52,16 @@ namespace ManuPath.DotGenerators.FillGenerators
             _randomRadiusMax = randomRadiusMax;
 
             // TODO: implement ellipse and rectangle
-            _figure = figure.ToPath(transform);
+            _figure = figure.ToPath(transform); 
+            // var primitives = ((Path)_figure).Primitives;
+            // for (int i = 0; i < primitives.Length; i++)
+            // {
+            //     var p = primitives[i];
+            //     if (p is QuadraticBezier qb)
+            //     {
+            //         primitives[i] = qb.ToCubicBezier();
+            //     }
+            // }
 
             FilterAndClosePrimitives((Path)_figure);
 
@@ -71,7 +80,7 @@ namespace ManuPath.DotGenerators.FillGenerators
                 CommonMath.ConvertRange(0, 255, _intervalMin.Y, _intervalMax.Y, intensity)
                );
 
-            Vector2 randomRadius = default;
+            Vector2 randomRadius = Vector2.Zero;
 
             if (_randomRadiusMin != Vector2.Zero || _randomRadiusMax != Vector2.Zero)
             {
@@ -105,15 +114,20 @@ namespace ManuPath.DotGenerators.FillGenerators
             var dots = new List<Vector2>();
 
             var bounds = _pathbounds;
-            for (var y = bounds.Top; y < bounds.Bottom; y += interval.Y)
+            
+            var rows = (int) ((bounds.Bottom - bounds.Top) / interval.Y);
+
+            for (var row = 0; row < rows; row++)
             {
+                var y = bounds.Top + (interval.Y * row);
+
+                var rayStart = new Vector2(bounds.Left - 1, y);
 
                 var segpoints = new List<Intersection>();
 
                 foreach (var prim in path.Primitives)
                 {
-
-                    var intersections = PathMath.IsRightRayIntersectsWithPrim(prim, new Vector2(bounds.Left - 1, y));
+                    var intersections = PathMath.IsRightRayIntersectsWithPrim(prim, rayStart);
                     if (!intersections?.Any() ?? true)
                         continue;
 
@@ -132,7 +146,7 @@ namespace ManuPath.DotGenerators.FillGenerators
                             foreach (var intersection in intersections)
                             {
 
-                                float dy = float.NaN;
+                                float dy;
 
                                 if (prim is Segment s)
                                 {
@@ -141,11 +155,19 @@ namespace ManuPath.DotGenerators.FillGenerators
                                 else if (prim is CubicBezier cb)
                                 {
                                     var t2 = intersection.t.Value + bezierDeltaT;
-                                    var y2 = BezierMath.BezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                                    var y2 = BezierMath.CubicBezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                                    dy = y2 - intersection.point.Y;
+                                }
+                                else if (prim is QuadraticBezier qb)
+                                {
+                                    var t2 = intersection.t.Value + bezierDeltaT;
+                                    var y2 = BezierMath.QuadBezierCoord(t2, qb.P1.Y, qb.C.Y, qb.P2.Y);
                                     dy = y2 - intersection.point.Y;
                                 }
                                 else
-                                    throw new ArgumentException();
+                                {
+                                    throw new NotSupportedException($"Primitive {prim.GetType().Name} is not supported.");
+                                }
 
                                 segpoints.Add(new Intersection() { point = intersection.point, dy = dy });
                             }
@@ -222,10 +244,13 @@ namespace ManuPath.DotGenerators.FillGenerators
                     ranges.RemoveAt(ranges.Count - 1);
                 }
 
+                
+                var cols = (int) ((bounds.Right - bounds.Left) / interval.X);
 
-
-                for (var x = bounds.Left; x < bounds.Right; x += interval.X)
+                for (var col = 0; col < cols; col++)
                 {
+                    var x = bounds.Left + (interval.X * col);
+
                     for (int i = 0; i < ranges.Count; i += 2)
                     {
                         if (ranges[i].X <= x && x <= ranges[i + 1].X)

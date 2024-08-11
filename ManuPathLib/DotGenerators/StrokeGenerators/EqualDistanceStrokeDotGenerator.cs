@@ -44,7 +44,7 @@ namespace ManuPath.DotGenerators.StrokeGenerators
                 _pointDistanceMax, 
                 _initialDeltaT, 
                 prevPoint,
-                t => BezierMath.BezierCoords(t, cb.P1, cb.C1, cb.C2, cb.P2),
+                t => BezierMath.CubicBezierCoords(t, cb.P1, cb.C1, cb.C2, cb.P2),
                 _initialDeltaTKoeff, 
                 _deltaTKoeff2
                 );
@@ -52,7 +52,22 @@ namespace ManuPath.DotGenerators.StrokeGenerators
             return dots;
         }
 
+        protected override Vector2[] QuadraticBezierToSegments(QuadraticBezier qb, Vector2? prevPoint = null)
+        {
+            var dots = CommonMath.CurveToEquidistantDots(
+                startT: 0f,
+                endT: 1f,
+                _pointDistanceMin,
+                _pointDistanceMax,
+                _initialDeltaT,
+                prevPoint,
+                t => BezierMath.QuadBezierCoords(t, qb.P1, qb.C, qb.P2),
+                _initialDeltaTKoeff,
+                _deltaTKoeff2
+                );
 
+            return dots;
+        }
 
         protected override Vector2[] SegmentDivide(Segment segment, Vector2? prevPoint = null)
         {

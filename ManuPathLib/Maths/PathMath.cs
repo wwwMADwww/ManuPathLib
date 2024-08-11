@@ -114,7 +114,7 @@ namespace ManuPath.Maths
                     cb.P2 - rayStart
                     );
 
-                var roots = BezierMath.GetBezierCubicRoots(cbr.P1.Y, cbr.C1.Y, cbr.C2.Y, cbr.P2.Y).ToList();
+                var roots = BezierMath.CubicBezierCubicRoots(cbr.P1.Y, cbr.C1.Y, cbr.C2.Y, cbr.P2.Y).ToList();
 
                 //return roots
                 //    .Select(r => (t: (float?)r, point: new Vector2(
@@ -128,18 +128,47 @@ namespace ManuPath.Maths
 
                 foreach (var root in roots)
                 {
-                    var x = BezierMath.BezierCoord(root, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X);
+                    var x = BezierMath.CubicBezierCoord(root, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X);
                     if (x > rayStart.X)
                     {
-                        var y = BezierMath.BezierCoord(root, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                        var y = BezierMath.CubicBezierCoord(root, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
                         res.Add((root, new Vector2(x, y)));
                     }
                 }
 
                 return res.ToArray();
             }
+            else if (prim is QuadraticBezier qb)
+            {
+                // ray is horizontal, no need for angle correction
+            
+                var qbr = new QuadraticBezier(
+                    qb.P1 - rayStart,
+                    qb.C  - rayStart,
+                    qb.P2 - rayStart
+                    );
+            
+                var rx = BezierMath.QuadBezierLinearRoot(qbr.P1.X, qbr.C.X, qbr.P2.X);
+                var ry = BezierMath.QuadBezierLinearRoot(qbr.P1.Y, qbr.C.Y, qbr.P2.Y);
+            
+                var res = new List<(float? t, Vector2 point)>();
+            
+                foreach (var root in new[] { rx, ry }.Where(x => x.HasValue))
+                {
+                    var x = BezierMath.QuadBezierCoord(root.Value, qb.P1.X, qb.C.X, qb.P2.X);
+                    if (x > rayStart.X)
+                    {
+                        var y = BezierMath.QuadBezierCoord(root.Value, qb.P1.Y, qb.C.Y, qb.P2.Y);
+                        res.Add((root, new Vector2(x, y)));
+                    }
+                }
+            
+                return res.ToArray();
+            }
             else
-                throw new ArgumentException();
+            { 
+                throw new NotSupportedException($"Primitive {prim.GetType().Name} is not supported.");
+            }
         }
 
 
@@ -232,11 +261,19 @@ namespace ManuPath.Maths
                                 else if (prim is CubicBezier cb)
                                 {
                                     var t2 = intersection.t.Value + bezierDeltaT;
-                                    var y2 = BezierMath.BezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                                    var y2 = BezierMath.CubicBezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                                    dy = y2 - intersection.point.Y;
+                                }
+                                else if (prim is QuadraticBezier qb)
+                                {
+                                    var t2 = intersection.t.Value + bezierDeltaT;
+                                    var y2 = BezierMath.QuadBezierCoord(t2, qb.P1.Y, qb.C.Y, qb.P2.Y);
                                     dy = y2 - intersection.point.Y;
                                 }
                                 else
-                                    throw new ArgumentException();
+                                { 
+                                    throw new NotSupportedException($"Primitive {prim.GetType().Name} is not supported.");
+                                }
 
 
                                 if (dy < 0)
@@ -287,44 +324,6 @@ namespace ManuPath.Maths
             return false;
 
         }
-
-
-
-        public static IEnumerable<IPathPrimitive> ScalePaths(IEnumerable<IPathPrimitive> paths, Vector2 scale, Vector2 shift)
-        {
-
-            var res = new List<IPathPrimitive>();
-
-            foreach (var path in paths)
-            {
-                if (path is CubicBezier cb)
-                {
-                    var p = new CubicBezier(
-                        cb.P1 * scale + shift,
-                        cb.C1 * scale + shift,
-                        cb.C2 * scale + shift,
-                        cb.P2 * scale + shift
-                        );
-
-                    res.Add(p);
-                }
-                else if (path is Segment line)
-                {
-                    var p = new Segment(
-                        line.P1 * scale + shift,
-                        line.P2 * scale + shift
-                        );
-                    res.Add(p);
-                }
-                else
-                {
-                    Console.WriteLine($"path type '{path.GetType().Name}' not supported yet");
-                }
-            }
-
-            return res.ToArray();
-        }
-
 
     }
 }

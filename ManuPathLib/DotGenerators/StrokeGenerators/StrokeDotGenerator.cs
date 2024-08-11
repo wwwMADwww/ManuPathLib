@@ -30,14 +30,31 @@ namespace ManuPath.DotGenerators.StrokeGenerators
             {
                 var t = i * dt;
                 var p = new Vector2(
-                    BezierMath.BezierCoord(t, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X),
-                    BezierMath.BezierCoord(t, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y));
+                    BezierMath.CubicBezierCoord(t, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X),
+                    BezierMath.CubicBezierCoord(t, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y));
                 res.Add(p);
             }
 
             return res.ToArray();
         }
 
+        protected override Vector2[] QuadraticBezierToSegments(QuadraticBezier qb, Vector2? prevPoint = null)
+        {
+            var res = new List<Vector2>(_segmentCount) { qb.P1 };
+
+            var dt = 1.0f / _segmentCount;
+
+            for (var i = 1; i <= _segmentCount; i++)
+            {
+                var t = i * dt;
+                var p = new Vector2(
+                    BezierMath.QuadBezierCoord(t, qb.P1.X, qb.C.X, qb.P2.X),
+                    BezierMath.QuadBezierCoord(t, qb.P1.Y, qb.C.Y, qb.P2.Y));
+                res.Add(p);
+            }
+
+            return res.ToArray();
+        }
 
 
         protected override Vector2[] SegmentDivide(Segment segment, Vector2? prevPoint = null)

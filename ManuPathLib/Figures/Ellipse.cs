@@ -64,7 +64,7 @@ namespace ManuPath.Figures
 
         public IFigure ToPath(bool transformed)
         {
-            var bezierCoords = BezierMath.CreateBeziersFromEllipse(Center, Radius);
+            var bezierCoords = BezierMath.CubicBeziersFromEllipse(Center, Radius);
 
             var beziers = bezierCoords.Select(b => (IPathPrimitive) new CubicBezier(b.p1, b.c1, b.c2, b.p2));
 

@@ -18,6 +18,11 @@ namespace ManuPath.Figures
             Pos = new Vector2(x, y);
             Size = new Vector2(width, height);
         }
+        public Rectangle(RectangleF rectangle)
+        {
+            Pos = new Vector2(rectangle.Location.X, rectangle.Location.Y);
+            Size = new Vector2(rectangle.Width, rectangle.Height);
+        }
 
         public Vector2 Pos { get; private set; }
 
