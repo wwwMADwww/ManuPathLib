@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using ManuPath.Extensions;
 using ManuPath.Figures;
 using ManuPath.Figures.PathPrimitives;
 using ManuPath.Maths;
@@ -22,10 +23,10 @@ namespace ManuPath.DotGenerators.FillGenerators
         private static Random _random = new Random(DateTime.Now.Millisecond);
         private RectangleF _pathbounds;
 
-        class Intersection
+        struct Intersection
         {
             public Vector2 point;
-            public float? dy;
+            public double? dy;
         }
 
         /// <summary>
@@ -128,7 +129,7 @@ namespace ManuPath.DotGenerators.FillGenerators
                 foreach (var prim in path.Primitives)
                 {
                     var intersections = PathMath.IsRightRayIntersectsWithPrim(prim, rayStart);
-                    if (!intersections?.Any() ?? true)
+                    if (intersections.IsNullOrEmpty())
                         continue;
 
                     switch (_figure.Fill.Rule)
@@ -146,23 +147,23 @@ namespace ManuPath.DotGenerators.FillGenerators
                             foreach (var intersection in intersections)
                             {
 
-                                float dy;
+                                double dy;
 
                                 if (prim is Segment s)
                                 {
-                                    dy = s.P2.Y - s.P1.Y;
+                                    dy = s.P2.Y - (double) s.P1.Y;
                                 }
                                 else if (prim is CubicBezier cb)
                                 {
                                     var t2 = intersection.t.Value + bezierDeltaT;
                                     var y2 = BezierMath.CubicBezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
-                                    dy = y2 - intersection.point.Y;
+                                    dy = y2 - (double)intersection.point.Y;
                                 }
                                 else if (prim is QuadraticBezier qb)
                                 {
                                     var t2 = intersection.t.Value + bezierDeltaT;
                                     var y2 = BezierMath.QuadBezierCoord(t2, qb.P1.Y, qb.C.Y, qb.P2.Y);
-                                    dy = y2 - intersection.point.Y;
+                                    dy = y2 - (double)intersection.point.Y;
                                 }
                                 else
                                 {
@@ -206,10 +207,12 @@ namespace ManuPath.DotGenerators.FillGenerators
 
                             foreach (var sp in segpoints.Skip(i))
                             {
-                                if (sp.dy < 0)
-                                    count--; // clockwise
-                                else if (sp.dy > 0)
-                                    count++; // counter clockwise
+                                if (sp.dy.HasValue && !CommonMath.IsDoubleEquals(sp.dy.Value, 0))
+                                {
+                                    if (sp.dy.Value < 0) count--; // clockwise
+                                    if (sp.dy.Value > 0) count++; // counter clockwise
+                                }
+                                // else parallel, do nothing
                             }
 
                             if (count == 0)
@@ -245,7 +248,7 @@ namespace ManuPath.DotGenerators.FillGenerators
                 }
 
                 
-                var cols = (int) ((bounds.Right - bounds.Left) / interval.X);
+                var cols = (int) (bounds.Width / interval.X);
 
                 for (var col = 0; col < cols; col++)
                 {

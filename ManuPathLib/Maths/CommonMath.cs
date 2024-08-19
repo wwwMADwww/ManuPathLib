@@ -8,13 +8,23 @@ namespace ManuPath.Maths
 {
     public static class CommonMath
     {
+                                      
+        public const float _epsilonf = 0.000001f;
+        public const double _epsilond = 0.000001;
 
-        public const float _epsilon = 0.000001f;
+        public static bool IsFloatEquals(float a, float b, float epsilon = _epsilonf) => 
+            Math.Abs(a - b) < epsilon;
 
+        public static bool IsDoubleEquals(double a, double b, double epsilon = _epsilond) => 
+            Math.Abs(a - b) < epsilon;
 
-        public static bool IsFloatEquals(float a, float b, float epsilon = _epsilon) => Math.Abs(a - b) < epsilon;
+        public static bool IsDoubleLess(double a, double b, bool inclusive = false, double epsilon = _epsilond) => 
+            (Math.Abs(a - b) >= epsilon) && (inclusive ? a <= b : a < b) ;
 
-        public static bool IsVectorsEquals(Vector2 a, Vector2 b, float epsilon = _epsilon) =>
+        public static bool IsDoubleGreater(double a, double b, bool inclusive = false, double epsilon = _epsilond) =>
+            (Math.Abs(a - b) >= epsilon) && (inclusive ? a >= b : a > b);
+
+        public static bool IsVectorsEquals(Vector2 a, Vector2 b, float epsilon = _epsilonf) =>
             IsFloatEquals(a.X, b.X, epsilon) && IsFloatEquals(a.Y, b.Y, epsilon);
 
 
@@ -282,7 +292,7 @@ namespace ManuPath.Maths
                 radius * radius;
 
             var det = B * B - 4 * A * C;
-            if (A <= _epsilon || det < 0)
+            if (A <= _epsilonf || det < 0)
             {
                 // No real solutions.
                 return Array.Empty<Vector2>();

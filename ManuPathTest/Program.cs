@@ -400,7 +400,7 @@ namespace ManuPathTest
                                 var rootsy = BezierMath.CubicBezierCubicRoots(cbr.P1.Y, cbr.C1.Y, cbr.C2.Y, cbr.P2.Y);
 
                                 rootPoints.AddRange(
-                                    rootsy.Select(r => BezierMath.CubicBezierCoords(r, cbr.P1, cbr.C1, cbr.C2, cbr.P2) + ray.P1));
+                                    rootsy.Select(r => BezierMath.CubicBezierCoords((float)r, cbr.P1, cbr.C1, cbr.C2, cbr.P2) + ray.P1));
                             }
                             else if (b is QuadraticBezier qb)
                             {

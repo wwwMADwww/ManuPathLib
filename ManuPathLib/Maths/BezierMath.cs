@@ -11,13 +11,13 @@ namespace ManuPath.Maths
     {
 
 
-        public static float CubicBezierCoord(float t, float i0, float i1, float i2, float i3)
+        public static float CubicBezierCoord(float t, float p1, float c1, float c2, float p2)
         {
             return (float)(
-                i0 * Math.Pow(1 - t, 3) +
-                i1 * 3 * t * Math.Pow(1 - t, 2) +
-                i2 * 3 * Math.Pow(t, 2) * (1 - t) +
-                i3 * Math.Pow(t, 3)
+                p1 * Math.Pow(1 - t, 3) +
+                c1 * 3 * t * Math.Pow(1 - t, 2) +
+                c2 * 3 * Math.Pow(t, 2) * (1 - t) +
+                p2 * Math.Pow(t, 3)
             );
         }
 
@@ -29,14 +29,14 @@ namespace ManuPath.Maths
         }
 
 
-        public static float QuadBezierCoord(float t, float i0, float i1, float i2)
+        public static float QuadBezierCoord(float t, float p1, float c, float p2)
         {
             // https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves
             // https://stackoverflow.com/a/5634528
-            return 
-                (1 - t) * (1 - t) * i0 + 
-                2 * (1 - t) * t * i1 + 
-                t * t * i2;
+            return
+                (1 - t) * (1 - t) * p1 +
+                2 * (1 - t) * t * c +
+                t * t * p2;
         }
 
         public static Vector2 QuadBezierCoords(float t, Vector2 p1, Vector2 c, Vector2 p2)
@@ -46,34 +46,34 @@ namespace ManuPath.Maths
                 BezierMath.QuadBezierCoord(t, p1.Y, c.Y, p2.Y));
         }
 
-        public static float? QuadBezierLinearRoot(double p0, double p1, double p2)
+        public static float? QuadBezierLinearRoot(double p1, double c, double p2)
         {
             // https://iquilezles.org/articles/bezierbbox/
 
-            var t = (p0 - p1) / (p0 - (2.0f * p1) + p2);
+            var t = (p1 - c) / (p1 - (2.0f * c) + p2);
 
-            if (!double.IsNaN(t) && (0 <= t && t <= 1)) return (float) t;
+            if (!double.IsNaN(t) && (0 <= t && t <= 1)) return (float)t;
             else return null;
         }
 
-
-        public static float[] CubicBezierCubicRoots(float pa, float pb, float pc, float pd)
+        public static double[] CubicBezierCubicRoots(double p1, double c1, double c2, double p2)
         {
             // Now then: given cubic coordinates {pa, pb, pc, pd} find all roots.
             // https://pomax.github.io/bezierinfo/index.html#extremities
 
             // A helper function to filter for values in the [0,1] interval:
-            bool Accept(double t) => 0f <= t && t <= 1f;
+            bool Accept(double t) => CommonMath.IsDoubleGreater(t, 0, true) && CommonMath.IsDoubleLess(t, 1, true);
 
             // A real-cuberoots-only function:
             double CubeRoot(double v)
             {
-                return v < 0
+                return CommonMath.IsDoubleLess(v, 0)
                     ? -Math.Pow(-v, 1.0 / 3.0)
-                    : Math.Pow(v, 1.0 / 3.0);
+                    :  Math.Pow( v, 1.0 / 3.0);
             }
 
 
+            var (pa, pb, pc, pd) = (p1, c1, c2, p2);
 
             var a = 3 * pa - 6 * pb + 3 * pc;
             var b = -3 * pa + 3 * pb;
@@ -81,16 +81,16 @@ namespace ManuPath.Maths
             var d = -pa + 3 * pb - 3 * pc + pd;
 
             // do a check to see whether we even need cubic solving:
-            if (CommonMath.IsFloatEquals(d, 0))
+            if (CommonMath.IsDoubleEquals(d, 0))
             {
                 // this is not a cubic curve.
-                if (CommonMath.IsFloatEquals(a, 0))
+                if (CommonMath.IsDoubleEquals(a, 0))
                 {
                     // in fact, this is not a quadratic curve either.
-                    if (CommonMath.IsFloatEquals(b, 0))
+                    if (CommonMath.IsDoubleEquals(b, 0))
                     {
                         // in fact in fact, there are no solutions.
-                        return Array.Empty<float>();
+                        return Array.Empty<double>();
                     }
                     // linear solution
                     return new[] { -c / b }.Where(x => Accept(x)).ToArray();
@@ -100,7 +100,7 @@ namespace ManuPath.Maths
                 var n2a = 2 * a;
                 var root01 = (q1 - b) / n2a;
                 var root02 = (-b - q1) / n2a;
-                return new[] { root01, root02 }.Where(x => Accept(x)).Select(x => (float)x).ToArray();
+                return new[] { root01, root02 }.Where(x => Accept(x)).ToArray();
             }
 
             // at this point, we know we need a cubic solution.
@@ -119,7 +119,7 @@ namespace ManuPath.Maths
             double u1, v1, root1, root2, root3;
 
             // three possible real roots:
-            if (discriminant < 0)
+            if (CommonMath.IsDoubleLess(discriminant, 0))
             {
                 var mp3 = -p / 3;
                 var mp33 = mp3 * mp3 * mp3;
@@ -132,16 +132,16 @@ namespace ManuPath.Maths
                 root1 = t1 * Math.Cos(phi / 3) - a / 3;
                 root2 = t1 * Math.Cos((phi + 2 * Math.PI) / 3) - a / 3;
                 root3 = t1 * Math.Cos((phi + 4 * Math.PI) / 3) - a / 3;
-                return new[] { root1, root2, root3 }.Where(x => Accept(x)).Select(x => (float)x).ToArray();
+                return new[] { root1, root2, root3 }.Where(x => Accept(x)).ToArray();
             }
 
             // three real roots, but two of them are equal:
-            if (discriminant == 0)
+            if (CommonMath.IsDoubleEquals(discriminant, 0))
             {
                 u1 = q2 < 0 ? CubeRoot(-q2) : -CubeRoot(q2);
                 root1 = 2 * u1 - a / 3;
                 root2 = -u1 - a / 3;
-                return new[] { root1, root2 }.Where(x => Accept(x)).Select(x => (float)x).ToArray();
+                return new[] { root1, root2 }.Where(x => Accept(x)).ToArray();
             }
 
             // one real root, two complex roots
@@ -150,7 +150,7 @@ namespace ManuPath.Maths
             v1 = CubeRoot(sd + q2);
             root1 = u1 - v1 - a / 3;
 
-            return new[] { root1 }.Where(x => Accept(x)).Select(x => (float)x).ToArray();
+            return new[] { root1 }.Where(x => Accept(x)).ToArray();
         }
 
 

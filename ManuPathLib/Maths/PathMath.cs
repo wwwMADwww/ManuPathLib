@@ -107,32 +107,21 @@ namespace ManuPath.Maths
 
                 // ray is horizontal, no need for angle correction
 
-                var cbr = new CubicBezier(
-                    cb.P1 - rayStart,
-                    cb.C1 - rayStart,
-                    cb.C2 - rayStart,
-                    cb.P2 - rayStart
-                    );
-
-                var roots = BezierMath.CubicBezierCubicRoots(cbr.P1.Y, cbr.C1.Y, cbr.C2.Y, cbr.P2.Y).ToList();
-
-                //return roots
-                //    .Select(r => (t: (float?)r, point: new Vector2(
-                //        BezierMath.BezierCoord(r, cbr.P1.X, cbr.C1.X, cbr.C2.X, cbr.P2.X),
-                //        BezierMath.BezierCoord(r, cbr.P1.Y, cbr.C1.Y, cbr.C2.Y, cbr.P2.Y)) + rayStart))
-                //    .Where(r => r.point.X > rayStart.X)
-                //    .ToArray();
-
+                var roots = BezierMath.CubicBezierCubicRoots(
+                    cb.P1.Y - (double)rayStart.Y, 
+                    cb.C1.Y - (double)rayStart.Y, 
+                    cb.C2.Y - (double)rayStart.Y, 
+                    cb.P2.Y - (double)rayStart.Y);
 
                 var res = new List<(float? t, Vector2 point)>();
 
                 foreach (var root in roots)
                 {
-                    var x = BezierMath.CubicBezierCoord(root, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X);
+                    var x = BezierMath.CubicBezierCoord((float) root, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X);
                     if (x > rayStart.X)
                     {
-                        var y = BezierMath.CubicBezierCoord(root, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
-                        res.Add((root, new Vector2(x, y)));
+                        var y = BezierMath.CubicBezierCoord((float)root, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                        res.Add(((float)root, new Vector2(x, y)));
                     }
                 }
 
@@ -142,28 +131,20 @@ namespace ManuPath.Maths
             {
                 // ray is horizontal, no need for angle correction
             
-                var qbr = new QuadraticBezier(
-                    qb.P1 - rayStart,
-                    qb.C  - rayStart,
-                    qb.P2 - rayStart
-                    );
-            
-                var rx = BezierMath.QuadBezierLinearRoot(qbr.P1.X, qbr.C.X, qbr.P2.X);
-                var ry = BezierMath.QuadBezierLinearRoot(qbr.P1.Y, qbr.C.Y, qbr.P2.Y);
-            
-                var res = new List<(float? t, Vector2 point)>();
-            
-                foreach (var root in new[] { rx, ry }.Where(x => x.HasValue))
-                {
-                    var x = BezierMath.QuadBezierCoord(root.Value, qb.P1.X, qb.C.X, qb.P2.X);
-                    if (x > rayStart.X)
-                    {
-                        var y = BezierMath.QuadBezierCoord(root.Value, qb.P1.Y, qb.C.Y, qb.P2.Y);
-                        res.Add((root, new Vector2(x, y)));
-                    }
-                }
-            
-                return res.ToArray();
+                var root = BezierMath.QuadBezierLinearRoot(
+                    qb.P1.Y - (double)rayStart.Y, 
+                    qb.C.Y  - (double)rayStart.Y, 
+                    qb.P2.Y - (double)rayStart.Y);
+
+                if (!root.HasValue) return null;
+
+                var x = BezierMath.QuadBezierCoord(root.Value, qb.P1.X, qb.C.X, qb.P2.X);
+
+                if (x <= rayStart.X) return null;
+
+                var y = BezierMath.QuadBezierCoord(root.Value, qb.P1.Y, qb.C.Y, qb.P2.Y);
+
+                return new[] { (root, new Vector2(x, y)) };
             }
             else
             { 
@@ -240,7 +221,7 @@ namespace ManuPath.Maths
                     switch (path.Fill.Rule)
                     {
                         case FillRule.EvenOdd:
-                            count += intersections.Count();
+                            count += intersections.Length;
                             break;
 
                         case FillRule.NonZeroWinding:
