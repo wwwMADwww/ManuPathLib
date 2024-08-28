@@ -199,7 +199,7 @@ namespace ManuPath.DotGenerators.FillGenerators
 
                         var countold = 0;
                         var p1 = segpoints[0].point;
-                        Vector2 p2 = Vector2.Zero;
+                        Vector2? p2 = null;
 
                         for (int i = 1; i < segpoints.Count; i++)
                         {
@@ -217,21 +217,24 @@ namespace ManuPath.DotGenerators.FillGenerators
 
                             if (count == 0)
                             {
-                                ranges.Add(p1);
-                                ranges.Add(p2);
-                                p1 = segpoints[i].point;
-                                p2 = Vector2.Zero;
+                                if (p2.HasValue)
+                                {
+                                    ranges.Add(p1);
+                                    ranges.Add(p2.Value);
+                                    p1 = segpoints[i].point;
+                                    p2 = null;
+                                }
                             }
                             else
                             {
-                                if (p2 == Vector2.Zero || Math.Abs(count) < Math.Abs(countold))
+                                if (p2 == null || Math.Abs(count) < Math.Abs(countold))
                                     p2 = segpoints[i].point;
                             }
 
                             countold = count;
                         }
                         ranges.Add(p1);
-                        ranges.Add(p2);
+                        ranges.Add(p2.Value);
                         break;
                 }
 

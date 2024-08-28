@@ -62,7 +62,7 @@ namespace ManuPath.Maths
             // https://pomax.github.io/bezierinfo/index.html#extremities
 
             // A helper function to filter for values in the [0,1] interval:
-            bool Accept(double t) => CommonMath.IsDoubleGreater(t, 0, true) && CommonMath.IsDoubleLess(t, 1, true);
+            bool Accept(double t) => CommonMath.IsDoubleGreaterEq(t, 0) && CommonMath.IsDoubleLessEq(t, 1);
 
             // A real-cuberoots-only function:
             double CubeRoot(double v)

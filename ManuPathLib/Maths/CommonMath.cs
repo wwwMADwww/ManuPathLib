@@ -18,11 +18,16 @@ namespace ManuPath.Maths
         public static bool IsDoubleEquals(double a, double b, double epsilon = _epsilond) => 
             Math.Abs(a - b) < epsilon;
 
-        public static bool IsDoubleLess(double a, double b, bool inclusive = false, double epsilon = _epsilond) => 
-            (Math.Abs(a - b) >= epsilon) && (inclusive ? a <= b : a < b) ;
+        public static bool IsDoubleLess(double a, double b, double epsilon = _epsilond) =>
+            (Math.Abs(a - b) >= epsilon) && a < b;
 
-        public static bool IsDoubleGreater(double a, double b, bool inclusive = false, double epsilon = _epsilond) =>
-            (Math.Abs(a - b) >= epsilon) && (inclusive ? a >= b : a > b);
+        public static bool IsDoubleLessEq(double a, double b, double epsilon = _epsilond) =>
+            (Math.Abs(a - b) < epsilon) || a < b;
+
+        public static bool IsDoubleGreater(double a, double b, double epsilon = _epsilond) =>
+            (Math.Abs(a - b) >= epsilon) && a > b;
+        public static bool IsDoubleGreaterEq(double a, double b, double epsilon = _epsilond) =>
+            (Math.Abs(a - b) < epsilon) || a > b;
 
         public static bool IsVectorsEquals(Vector2 a, Vector2 b, float epsilon = _epsilonf) =>
             IsFloatEquals(a.X, b.X, epsilon) && IsFloatEquals(a.Y, b.Y, epsilon);
