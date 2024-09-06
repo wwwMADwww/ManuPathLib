@@ -7,10 +7,9 @@ using System.Numerics;
 namespace ManuPath.Maths
 {
     public static class CommonMath
-    {
-                                      
+    {                   
         public const float _epsilonf = 0.000001f;
-        public const double _epsilond = 0.000001;
+        public const double _epsilond = 0.00000001;
 
         public static bool IsFloatEquals(float a, float b, float epsilon = _epsilonf) => 
             Math.Abs(a - b) < epsilon;

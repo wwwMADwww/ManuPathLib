@@ -13,7 +13,7 @@ namespace ManuPath.Maths
     {
 
 
-        public static (float? t, Vector2 point)[] IsRightRayIntersectsWithPrim(IPathPrimitive prim, Vector2 rayStart)
+        public static (float? t, Vector2 point)[] GetRightRayPrimIntersections(IPathPrimitive prim, Vector2 rayStart)
         {
             if (prim is Dot)
                 throw new ArgumentException();
@@ -117,11 +117,11 @@ namespace ManuPath.Maths
 
                 foreach (var root in roots)
                 {
-                    var x = BezierMath.CubicBezierCoord((float) root, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X);
+                    var x = BezierMath.CubicBezierCoordD(root, cb.P1.X, cb.C1.X, cb.C2.X, cb.P2.X);
                     if (x > rayStart.X)
                     {
-                        var y = BezierMath.CubicBezierCoord((float)root, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
-                        res.Add(((float)root, new Vector2(x, y)));
+                        var y = BezierMath.CubicBezierCoordD(root, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                        res.Add(((float)root, new Vector2((float)x, (float)y)));
                     }
                 }
 
@@ -215,7 +215,7 @@ namespace ManuPath.Maths
                 // if (s.IsZeroLength)
                 //     continue;
 
-                var intersections = IsRightRayIntersectsWithPrim(prim, point);
+                var intersections = GetRightRayPrimIntersections(prim, point);
                 if (intersections?.Any() ?? false)
                 {
                     switch (path.Fill.Rule)

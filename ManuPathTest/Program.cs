@@ -69,7 +69,9 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\beziers1.svg");
             // var filename = (@"..\..\..\svg\beziers1 2.svg");
             // var filename = (@"..\..\..\svg\beziers2.svg");
+            // var filename = (@"..\..\..\svg\beziers2 1.svg");
             // var filename = (@"..\..\..\svg\beziers3.svg");
+            // var filename = (@"..\..\..\svg\fill1.svg");
 
             var filenameonly = System.IO.Path.GetFileName(filename);
 
@@ -257,8 +259,8 @@ namespace ManuPathTest
 
             var fillscale = Math.Max(vectorImage.Size.X, vectorImage.Size.Y) / 100f;
 
-            var figuresFills = figuresWithFill
-                .SelectMany(fgiure => new IntervalFillDotGenerator(
+            var figuresFillGenerators = figuresWithFill
+                .Select(fgiure => new IntervalFillDotGenerator(
                     fgiure,
                     transform: false,
                     // intervalMin: new Vector2(0.2f, 0.2f) * fillscale,
@@ -269,11 +271,15 @@ namespace ManuPathTest
                     // intervalMin: new Vector2(0.1f, 0.1f) * fillscale,
                     // intervalMax: new Vector2(0.015f, 0.015f) * fillscale
 
-                    intervalMin: new Vector2(0.5f) * fillscale,
-                    intervalMax: new Vector2(0.1f) * fillscale
+                    // intervalMin: new Vector2(0.5f) * fillscale,
+                    // intervalMax: new Vector2(0.1f) * fillscale
 
-                    ).Generate())
-                ;//.ToArray();
+                    intervalMin: new Vector2(1f) * fillscale,
+                    intervalMax: new Vector2(0.1f) * fillscale
+                    // randomRadiusMin: new Vector2(1f) * fillscale,
+                    // randomRadiusMax: new Vector2(1f) * fillscale
+                ))
+                .ToArray();
 
             #endregion
 
@@ -379,11 +385,7 @@ namespace ManuPathTest
                         var raysCount = 100;
                         for (int i = 0; i < raysCount; i++)
                         {
-                            if (i == 89 || i == 90)
-                            {
-                                ;
-                            }
-                            var rayY = bounds.Top + ((float)bounds.Height / raysCount * i);
+                            var rayY = bounds.Top + (bounds.Height / raysCount * i);
                             var ray = new Segment(
                                 new Vector2(bounds.Left, rayY),
                                 new Vector2(bounds.Right, rayY));
@@ -443,7 +445,7 @@ namespace ManuPathTest
 
             #region primitives first and last points
 
-            var figureEndsMarkPaths = figures
+            var primitiveEndsMarkPaths = figures
                 .SelectMany(figure => 
                 {
                     if (figure is Path path)
@@ -587,15 +589,15 @@ namespace ManuPathTest
 
             var vaBounds = Enumerable.Empty<Rectangle>()
                 .Concat(figuresBounds)
-                .Concat(pathPrimsBounds)
+                //.Concat(pathPrimsBounds)
                 .Select(p => PathToVertexLinesArray((Path)p.ToPath(true)))
                 .ToArray();
 
             //var vaMarks = new Func<int, VertexArray[]>(i => pathMarks(i).Select(p => PathToVertexLinesArray(p)).ToArray());
             var vaMarks = new Path[] { }
-                //.Concat(figureEndsMarkPaths)
-                .Concat(beziersExtremes)
-                //.Concat(beziersRightRayIntersections)
+                // .Concat(primitiveEndsMarkPaths)
+                // .Concat(beziersExtremes)
+                // .Concat(beziersRightRayIntersections)
                 .Select(p => PathToVertexLinesArray(p)).ToArray();
 
             // var vaFills = pathFills.Select(p => PathToVertexDotArray(p)).ToArray();
@@ -654,7 +656,7 @@ namespace ManuPathTest
 
                 fillStopwatch.Start();
 
-                var fills = figuresFills.ToArray();
+                var fills = figuresFillGenerators.SelectMany(g => g.Generate()).ToArray();
 
                 fillStopwatch.Stop();
 
@@ -675,7 +677,7 @@ namespace ManuPathTest
                 // window.Draw(vaPathJumps, renderStates);
 
                 var mousepos = Mouse.GetPosition(window);
-                var mousecoords = new Vector2(mousepos.X, mousepos.Y) / scale;
+                var mousecoords = new Vector2(mousepos.X - viewPos.X, mousepos.Y - viewPos.Y) / scale;
 
                 window.Display();
 

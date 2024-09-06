@@ -26,7 +26,9 @@ namespace ManuPath.Figures.PathPrimitives
         public Vector2 FirstPoint => P1;
         public Vector2 LastPoint => P2;
 
-        public bool IsZeroLength => P1 - P2 == Vector2.Zero;
+        public bool IsZeroLength => 
+            CommonMath.IsFloatEquals(P1.X, P2.X) && 
+            CommonMath.IsFloatEquals(P1.Y, P2.Y);
 
         public float Length => CommonMath.Distance(P1, P2);
 

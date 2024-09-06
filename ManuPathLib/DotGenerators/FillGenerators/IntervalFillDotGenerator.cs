@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using ManuPath.Extensions;
 using ManuPath.Figures;
 using ManuPath.Figures.PathPrimitives;
@@ -13,8 +12,6 @@ namespace ManuPath.DotGenerators.FillGenerators
 {
     public class IntervalFillDotGenerator : IDotGenerator
     {
-        const float bezierDeltaT = 0.001f;
-
         private readonly Vector2 _intervalMin;
         private readonly Vector2 _intervalMax;
         private readonly Vector2 _randomRadiusMax;
@@ -22,11 +19,20 @@ namespace ManuPath.DotGenerators.FillGenerators
         private readonly IFigure _figure;
         private static Random _random = new Random(DateTime.Now.Millisecond);
         private RectangleF _pathbounds;
+        private byte _intensity;
+        private Vector2 _interval;
+        private RowRangeEnds[] _rowsRangeEnds;
 
         struct Intersection
         {
             public Vector2 point;
-            public double? dy;
+            public double dySign;
+        }
+
+        struct RowRangeEnds
+        {
+            public float Y;
+            public Vector2[] RangeEnds;
         }
 
         /// <summary>
@@ -67,27 +73,30 @@ namespace ManuPath.DotGenerators.FillGenerators
             FilterAndClosePrimitives((Path)_figure);
 
             _pathbounds = _figure.GetBounds();
+
+            _intensity = _figure.Fill.Color.A;
+
+            // more intensity - less interval
+            _interval = new Vector2(
+                CommonMath.ConvertRange(0, 255, _intervalMin.X, _intervalMax.X, _intensity),
+                CommonMath.ConvertRange(0, 255, _intervalMin.Y, _intervalMax.Y, _intensity)
+            );
+
+            CalculatePathRowsRangeEnds((Path)_figure, _interval);
         }
 
 
 
         public GeneratedDots[] Generate()
         {
-            var intensity = _figure.Fill.Color.A;
-
-            // more intensity - less interval
-            var interval = new Vector2(
-                CommonMath.ConvertRange(0, 255, _intervalMin.X, _intervalMax.X, intensity),
-                CommonMath.ConvertRange(0, 255, _intervalMin.Y, _intervalMax.Y, intensity)
-               );
 
             Vector2 randomRadius = Vector2.Zero;
 
             if (_randomRadiusMin != Vector2.Zero || _randomRadiusMax != Vector2.Zero)
             {
                 randomRadius = new Vector2(
-                    CommonMath.ConvertRange(0, 255, _randomRadiusMin.X, _randomRadiusMax.X, intensity),
-                    CommonMath.ConvertRange(0, 255, _randomRadiusMin.Y, _randomRadiusMax.Y, intensity)
+                    CommonMath.ConvertRange(0, 255, _randomRadiusMin.X, _randomRadiusMax.X, _intensity),
+                    CommonMath.ConvertRange(0, 255, _randomRadiusMin.Y, _randomRadiusMax.Y, _intensity)
                 );
             }
 
@@ -95,7 +104,7 @@ namespace ManuPath.DotGenerators.FillGenerators
 
             if (_figure is Path path)
             {
-                dots = GenerateForPath(path, interval, randomRadius);
+                dots = GenerateForPath(randomRadius);
             }
             else
             {
@@ -109,179 +118,220 @@ namespace ManuPath.DotGenerators.FillGenerators
             }};
         }
 
-
-        private Vector2[] GenerateForPath(Path path, Vector2 interval, Vector2 randomRadius)
+        private Vector2[] GenerateForPath(Vector2 randomRadius)
         {
             var dots = new List<Vector2>();
 
-            var bounds = _pathbounds;
-            
-            var rows = (int) ((bounds.Bottom - bounds.Top) / interval.Y);
+            var cols = (int)(_pathbounds.Width / _interval.X);
 
-            for (var row = 0; row < rows; row++)
+            foreach (var rowRangeEnds in _rowsRangeEnds)
             {
-                var y = bounds.Top + (interval.Y * row);
-
-                var rayStart = new Vector2(bounds.Left - 1, y);
-
-                var segpoints = new List<Intersection>();
-
-                foreach (var prim in path.Primitives)
-                {
-                    var intersections = PathMath.IsRightRayIntersectsWithPrim(prim, rayStart);
-                    if (intersections.IsNullOrEmpty())
-                        continue;
-
-                    switch (_figure.Fill.Rule)
-                    {
-                        case FillRule.EvenOdd:
-                            segpoints.AddRange(intersections.Select(i => new Intersection() { point = i.point }));
-                            break;
-
-                        case FillRule.NonZeroWinding:
-
-                            // casting ray from point to right
-                            // on clockwise - line goes down
-                            // on counter clockwise - line goes down
-
-                            foreach (var intersection in intersections)
-                            {
-
-                                double dy;
-
-                                if (prim is Segment s)
-                                {
-                                    dy = s.P2.Y - (double) s.P1.Y;
-                                }
-                                else if (prim is CubicBezier cb)
-                                {
-                                    var t2 = intersection.t.Value + bezierDeltaT;
-                                    var y2 = BezierMath.CubicBezierCoord(t2, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
-                                    dy = y2 - (double)intersection.point.Y;
-                                }
-                                else if (prim is QuadraticBezier qb)
-                                {
-                                    var t2 = intersection.t.Value + bezierDeltaT;
-                                    var y2 = BezierMath.QuadBezierCoord(t2, qb.P1.Y, qb.C.Y, qb.P2.Y);
-                                    dy = y2 - (double)intersection.point.Y;
-                                }
-                                else
-                                {
-                                    throw new NotSupportedException($"Primitive {prim.GetType().Name} is not supported.");
-                                }
-
-                                segpoints.Add(new Intersection() { point = intersection.point, dy = dy });
-                            }
-
-                            break;
-
-                    } // /switch fillrule
-
-
-
-                } // /foreach prim
-
-                if (segpoints.Count <= 1)
-                    continue;
-
-
-                var ranges = new List<Vector2>();
-
-                switch (_figure.Fill.Rule)
-                {
-                    case FillRule.EvenOdd:
-                        ranges = segpoints.Select(sp => sp.point).ToList();
-                        break;
-
-                    case FillRule.NonZeroWinding:
-
-                        segpoints = segpoints.OrderBy(p => p.point.X).ToList();
-
-                        var countold = 0;
-                        var p1 = segpoints[0].point;
-                        Vector2? p2 = null;
-
-                        for (int i = 1; i < segpoints.Count; i++)
-                        {
-                            var count = 0;
-
-                            foreach (var sp in segpoints.Skip(i))
-                            {
-                                if (sp.dy.HasValue && !CommonMath.IsDoubleEquals(sp.dy.Value, 0))
-                                {
-                                    if (sp.dy.Value < 0) count--; // clockwise
-                                    if (sp.dy.Value > 0) count++; // counter clockwise
-                                }
-                                // else parallel, do nothing
-                            }
-
-                            if (count == 0)
-                            {
-                                if (p2.HasValue)
-                                {
-                                    ranges.Add(p1);
-                                    ranges.Add(p2.Value);
-                                    p1 = segpoints[i].point;
-                                    p2 = null;
-                                }
-                            }
-                            else
-                            {
-                                if (p2 == null || Math.Abs(count) < Math.Abs(countold))
-                                    p2 = segpoints[i].point;
-                            }
-
-                            countold = count;
-                        }
-                        ranges.Add(p1);
-                        ranges.Add(p2.Value);
-                        break;
-                }
-
-
-                if (ranges.Count <= 1)
-                    continue;
-
-                ranges = ranges.OrderBy(p => p.X).ToList();
-
-                if (ranges.Count % 2 == 1)
-                {
-                    // ranges.Add(new Vector2(bounds.Right, y));
-                    ranges.RemoveAt(ranges.Count - 1);
-                }
-
-                
-                var cols = (int) (bounds.Width / interval.X);
+                var y = rowRangeEnds.Y;
+                var rangeEnds = rowRangeEnds.RangeEnds;
 
                 for (var col = 0; col < cols; col++)
                 {
-                    var x = bounds.Left + (interval.X * col);
+                    var x = _pathbounds.Left + (_interval.X * col);
 
-                    for (int i = 0; i < ranges.Count; i += 2)
+                    for (int i = 0; i < rangeEnds.Length; i += 2)
                     {
-                        if (ranges[i].X <= x && x <= ranges[i + 1].X)
+                        if (rangeEnds[i].X <= x && x <= rangeEnds[i + 1].X)
                         {
-
                             if (randomRadius == Vector2.Zero)
+                            {
                                 dots.Add(new Vector2(x, y));
+                            }
                             else
+                            {
                                 dots.Add(new Vector2(
                                     x + (float)(_random.NextDouble() - 0.5) * randomRadius.X,
                                     y + (float)(_random.NextDouble() - 0.5) * randomRadius.Y));
+                            }
 
                             break;
                         }
                     }
-                } // /for x
-
-
-            } // /for y
+                }
+            }
 
             return dots.ToArray();
         }
 
+        private void CalculatePathRowsRangeEnds(Path path, Vector2 interval)
+        {            
+            var rows = (int) ((_pathbounds.Bottom - _pathbounds.Top) / interval.Y);
+
+            var rowsRangeEnds = new List<RowRangeEnds>(rows); 
+
+            for (var row = 0; row < rows; row++)
+            {
+                var y = _pathbounds.Top + (interval.Y * row);
+
+                var rayStart = new Vector2(_pathbounds.Left - 1, y);
+
+                var intersections = path.Fill.Rule switch
+                {
+                    FillRule.EvenOdd => CalculateIntersectionsEvenOdd(path.Primitives, rayStart),
+                    FillRule.NonZeroWinding => CalculateIntersectionsNonZeroWinding(path.Primitives, rayStart),
+                    _ => throw new ArgumentOutOfRangeException(nameof(path.Fill) + "." + nameof(path.Fill.Rule), path.Fill.Rule, "Unknown FillRule"),
+                };
+
+                if (intersections.Length <= 1) continue;
+
+                var rangesEnds = path.Fill.Rule switch
+                {
+                    FillRule.EvenOdd => CalculateRangeEndsEvenOdd(intersections),
+                    FillRule.NonZeroWinding => CalculateRangeEndsNonZeroWinding(intersections),
+                    _ => throw new ArgumentOutOfRangeException(nameof(path.Fill) + "." + nameof(path.Fill.Rule), path.Fill.Rule, "Unknown FillRule"),
+                };
+
+                rangesEnds = rangesEnds.OrderBy(p => p.X).Distinct().ToArray();
+
+                if (rangesEnds.Length <= 1) continue;
+
+                if (rangesEnds.Length % 2 == 1)
+                {
+                    rangesEnds = rangesEnds[..^1];
+                }
+
+                var rowRangeEnds = new RowRangeEnds() { Y = y, RangeEnds = rangesEnds };
+
+                rowsRangeEnds.Add(rowRangeEnds);
+
+            } // /for y
+
+            _rowsRangeEnds = rowsRangeEnds.ToArray();
+        }
+
+        #region CalculateIntersections
+
+        private Intersection[] CalculateIntersectionsEvenOdd(IPathPrimitive[] primitives, Vector2 rayStart)
+        {
+            var intersections = new List<Intersection>();
+
+            foreach (var prim in primitives)
+            {
+                var primitiveIntersections = PathMath.GetRightRayPrimIntersections(prim, rayStart);
+
+                if (primitiveIntersections.IsNullOrEmpty()) 
+                    continue;
+
+                intersections.AddRange(primitiveIntersections.Select(i => new Intersection() { point = i.point }));
+            }
+
+            return intersections.ToArray();
+        }
+
+        private Intersection[] CalculateIntersectionsNonZeroWinding(IPathPrimitive[] primitives, Vector2 rayStart)
+        {
+            var intersections = new List<Intersection>();
+
+            foreach (var prim in primitives)
+            {
+                var primitiveIntersections = PathMath.GetRightRayPrimIntersections(prim, rayStart);
+
+                if (primitiveIntersections.IsNullOrEmpty()) 
+                    continue;
+
+                // casting ray from point to right
+                // on clockwise - line goes down
+                // on counter clockwise - line goes down
+
+                foreach (var intersection in primitiveIntersections)
+                {
+                    double dySign;
+
+                    if (prim is Segment s)
+                    {
+                        dySign = Math.Sign(s.P2.Y - (double)s.P1.Y);
+                    }
+                    else if (prim is CubicBezier cb)
+                    {
+                        var dy = BezierMath.CubicBezierDerivative(intersection.t.Value, cb.P1.Y, cb.C1.Y, cb.C2.Y, cb.P2.Y);
+                        dySign = CommonMath.IsDoubleEquals(dy, 0) ? 0 : Math.Sign(dy);
+                    }
+                    else if (prim is QuadraticBezier qb)
+                    {
+                        var dy = BezierMath.QuadBezierDerivative(intersection.t.Value, qb.P1.Y, qb.C.Y, qb.P2.Y);
+                        dySign = CommonMath.IsDoubleEquals(dy, 0) ? 0 : Math.Sign(dy);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"Primitive {prim.GetType().Name} is not supported.");
+                    }
+
+                    intersections.Add(new Intersection() { point = intersection.point, dySign = dySign });
+                }
+            }
+
+            return intersections.ToArray();
+        }
+
+        #endregion CalculateIntersections
+
+        #region CalculateRangeEnds
+
+        private Vector2[] CalculateRangeEndsEvenOdd(Intersection[] intersections)
+        {
+            var rangesEnds = intersections.Select(sp => sp.point).ToArray();
+
+            return rangesEnds;
+        }
+
+        private Vector2[] CalculateRangeEndsNonZeroWinding(Intersection[] intersections)
+        {
+            var rangesEnds = new List<Vector2>();
+
+            intersections = intersections.OrderBy(p => p.point.X).ToArray();
+
+            var countold = 0;
+            var p1 = intersections[0].point;
+            Vector2? p2 = null;
+
+            for (int i = 1; i < intersections.Length; i++)
+            {
+                var count = 0;
+
+                foreach (var intersection in intersections.Skip(i))
+                {
+                    if (intersection.dySign < 0) count--; // clockwise
+                    if (intersection.dySign > 0) count++; // counter clockwise
+                }
+
+                if (count == 0)
+                {
+                    if (p2.HasValue)
+                    {
+                        rangesEnds.Add(p1);
+                        rangesEnds.Add(p2.Value);
+                        p1 = intersections[i].point;
+                        p2 = null;
+                    }
+                }
+                else
+                {
+                    if (p2 == null || Math.Abs(count) < Math.Abs(countold))
+                        p2 = intersections[i].point;
+                }
+
+                countold = count;
+            }
+
+            if (p2.HasValue)
+            {
+                rangesEnds.Add(p1);
+                rangesEnds.Add(p2.Value);
+            }
+
+            return rangesEnds.ToArray();
+        }
+
+        #endregion CalculateRangeEnds
+
         private void FilterAndClosePrimitives(Path path)
         {
+            // TODO: fix path with separated Segments. maybe just delete them
+
             Vector2? lastOpen = null;
 
             var primitives = path.Primitives

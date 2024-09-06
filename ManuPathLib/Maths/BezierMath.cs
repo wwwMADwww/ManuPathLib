@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ManuPath.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -28,15 +29,36 @@ namespace ManuPath.Maths
                 BezierMath.CubicBezierCoord(t, p1.Y, c1.Y, c2.Y, p2.Y));
         }
 
+        public static double CubicBezierCoordD(double t, double p1, double c1, double c2, double p2)
+        {
+            return (
+                p1 * Math.Pow(1 - t, 3) +
+                c1 * 3 * t * Math.Pow(1 - t, 2) +
+                c2 * 3 * Math.Pow(t, 2) * (1 - t) +
+                p2 * Math.Pow(t, 3)
+            );
+        }
+
+        public static double CubicBezierDerivative(double t, double p1, double c1, double c2, double p2)
+        {
+            // https://stackoverflow.com/a/4091430
+            return (float)(
+                p1 * -3 * Math.Pow(1 - t, 2) +
+                c1 *  3 * Math.Pow(1 - t, 2) - c1 * 6 * t * (1 - t) -
+                c2 *  3 * Math.Pow(    t, 2) + c2 * 6 * t * (1 - t) +
+                p2 *  3 * Math.Pow(    t, 2)
+            );
+        }
+
 
         public static float QuadBezierCoord(float t, float p1, float c, float p2)
         {
             // https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves
             // https://stackoverflow.com/a/5634528
             return
-                (1 - t) * (1 - t) * p1 +
-                2 * (1 - t) * t * c +
-                t * t * p2;
+                p1 * (1 - t) * (1 - t) +
+                c  * 2 * (1 - t) * t +
+                p2 * t * t;
         }
 
         public static Vector2 QuadBezierCoords(float t, Vector2 p1, Vector2 c, Vector2 p2)
@@ -45,6 +67,16 @@ namespace ManuPath.Maths
                 BezierMath.QuadBezierCoord(t, p1.X, c.X, p2.X),
                 BezierMath.QuadBezierCoord(t, p1.Y, c.Y, p2.Y));
         }
+
+        public static double QuadBezierDerivative(double t, double p1, double c, double p2)
+        {
+            // https://math.stackexchange.com/a/885299
+            return
+                p1 * (-2 + 2 * t) +
+                c  * ( 2 - 4 * t) +
+                p2 * 2 * t;
+        }
+
 
         public static float? QuadBezierLinearRoot(double p1, double c, double p2)
         {
@@ -62,14 +94,13 @@ namespace ManuPath.Maths
             // https://pomax.github.io/bezierinfo/index.html#extremities
 
             // A helper function to filter for values in the [0,1] interval:
-            bool Accept(double t) => CommonMath.IsDoubleGreaterEq(t, 0) && CommonMath.IsDoubleLessEq(t, 1);
+            static bool Accept(double t) => CommonMath.IsDoubleGreaterEq(t, 0) && CommonMath.IsDoubleLessEq(t, 1);
 
             // A real-cuberoots-only function:
-            double CubeRoot(double v)
+            static double CubeRoot(double v)
             {
-                return CommonMath.IsDoubleLess(v, 0)
-                    ? -Math.Pow(-v, 1.0 / 3.0)
-                    :  Math.Pow( v, 1.0 / 3.0);
+                if (v < 0) return -Math.Pow(-v, 1.0 / 3.0);
+                return Math.Pow(v, 1.0 / 3.0);
             }
 
 
@@ -100,7 +131,7 @@ namespace ManuPath.Maths
                 var n2a = 2 * a;
                 var root01 = (q1 - b) / n2a;
                 var root02 = (-b - q1) / n2a;
-                return new[] { root01, root02 }.Where(x => Accept(x)).ToArray();
+                return new[] { root01, root02 }.Where(x => Accept(x)).Distinct(new DoubleEpsilonEqualityComparer()).ToArray();
             }
 
             // at this point, we know we need a cubic solution.
@@ -132,7 +163,7 @@ namespace ManuPath.Maths
                 root1 = t1 * Math.Cos(phi / 3) - a / 3;
                 root2 = t1 * Math.Cos((phi + 2 * Math.PI) / 3) - a / 3;
                 root3 = t1 * Math.Cos((phi + 4 * Math.PI) / 3) - a / 3;
-                return new[] { root1, root2, root3 }.Where(x => Accept(x)).ToArray();
+                return new[] { root1, root2, root3 }.Where(x => Accept(x)).Distinct(new DoubleEpsilonEqualityComparer()).ToArray();
             }
 
             // three real roots, but two of them are equal:
@@ -141,7 +172,7 @@ namespace ManuPath.Maths
                 u1 = q2 < 0 ? CubeRoot(-q2) : -CubeRoot(q2);
                 root1 = 2 * u1 - a / 3;
                 root2 = -u1 - a / 3;
-                return new[] { root1, root2 }.Where(x => Accept(x)).ToArray();
+                return new[] { root1, root2 }.Where(x => Accept(x)).Distinct(new DoubleEpsilonEqualityComparer()).ToArray();
             }
 
             // one real root, two complex roots
