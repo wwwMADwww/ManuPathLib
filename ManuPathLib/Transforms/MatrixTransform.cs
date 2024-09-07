@@ -14,11 +14,8 @@ namespace ManuPath.Transforms
             _matrix = matrix;
         }
 
-        public Vector2 Transform(Vector2 pivot, Vector2 coord)
+        public Vector2 Transform(Vector2 coord)
         {
-            //var newCoord = coord - pivot;
-            //newCoord = Vector2.Transform(newCoord, _matrix);
-            //newCoord += pivot;
             var newCoord = Vector2.Transform(coord, _matrix);
             return newCoord;
         }

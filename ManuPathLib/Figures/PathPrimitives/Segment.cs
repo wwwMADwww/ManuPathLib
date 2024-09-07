@@ -49,9 +49,8 @@ namespace ManuPath.Figures.PathPrimitives
 
             foreach (var transform in transforms.EmptyIfNull())
             {
-                var pivot = seg.P1;
-                seg.P1 = transform.Transform(pivot, seg.P1);
-                seg.P2 = transform.Transform(pivot, seg.P2);
+                seg.P1 = transform.Transform(seg.P1);
+                seg.P2 = transform.Transform(seg.P2);
             }
 
             return seg;

@@ -31,7 +31,7 @@ namespace ManuPath.Figures.PathPrimitives
 
             foreach (var transform in transforms)
             {
-                dot.Pos = transform.Transform(dot.Pos, dot.Pos);
+                dot.Pos = transform.Transform(dot.Pos);
             }
 
             return dot;

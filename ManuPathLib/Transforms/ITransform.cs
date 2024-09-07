@@ -7,6 +7,6 @@ namespace ManuPath.Transforms
 {
     public interface ITransform
     {
-        Vector2 Transform(Vector2 pivot, Vector2 coord);
+        Vector2 Transform(Vector2 coord);
     }
 }

@@ -47,10 +47,9 @@ namespace ManuPath.Figures.PathPrimitives
             var cb = (QuadraticBezier)Clone();
             foreach (var transform in transforms.EmptyIfNull())
             {
-                var pivot = cb.P1;
-                cb.P1 = transform.Transform(pivot, cb.P1);
-                cb.C  = transform.Transform(pivot, cb.C );
-                cb.P2 = transform.Transform(pivot, cb.P2);
+                cb.P1 = transform.Transform(cb.P1);
+                cb.C  = transform.Transform(cb.C );
+                cb.P2 = transform.Transform(cb.P2);
             }
 
             return cb;

@@ -17,7 +17,7 @@ namespace ManuPath.Transforms
             _angle = angle;
         }
 
-        public Vector2 Transform(Vector2 pivot, Vector2 coord)
+        public Vector2 Transform(Vector2 coord)
         {
             var newCoord = CommonMath.Rotate(_center, coord, CommonMath.DegToRad(_angle));
             return newCoord;

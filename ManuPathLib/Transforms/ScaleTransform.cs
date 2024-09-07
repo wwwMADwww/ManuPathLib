@@ -16,12 +16,9 @@ namespace ManuPath.Transforms
 
         public ScaleTransform(float x, float y) : this(new Vector2(x, y)) { }
 
-        public Vector2 Transform(Vector2 pivot, Vector2 coord)
+        public Vector2 Transform(Vector2 coord)
         {
-            var newCoord = coord - pivot;
-            newCoord *= _scale;
-            newCoord += pivot;
-            return newCoord;
+            return coord * _scale;
         }
     }
 }

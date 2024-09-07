@@ -57,9 +57,8 @@ namespace ManuPath.Figures
                 var rect = (Rectangle)Clone();
                 foreach (var trans in Transforms.EmptyIfNull())
                 {
-                    var pivot = rect.Pos;
-                    rect.Pos = trans.Transform(pivot, rect.Pos);
-                    rect.Size = trans.Transform(pivot, rect.Size);
+                    rect.Pos = trans.Transform(rect.Pos);
+                    rect.Size = trans.Transform(rect.Size);
                 }
                 rect.Transforms = null;
                 return rect;

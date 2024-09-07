@@ -62,6 +62,8 @@ namespace ManuPathTest
             // var filename = (@"..\..\..\svg\transform 3.svg");
             // var filename = (@"..\..\..\svg\transform 4.svg");
             // var filename = (@"..\..\..\svg\transform 5.svg");
+            // var filename = (@"..\..\..\svg\scale 1 1.svg");
+            // var filename = (@"..\..\..\svg\scale 1 2.svg");
             // var filename = (@"..\..\..\svg\opens.svg");
             // var filename = (@"..\..\..\svg\text.svg");
             // var filename = (@"..\..\..\svg\discontinuity.svg");
@@ -225,7 +227,7 @@ namespace ManuPathTest
 
             #endregion sorting figures by ends distance
 
-            //figures = sortedFigures.ToArray();
+            figures = sortedFigures.ToArray();
 
             //var segDistance = Math.Max(6/scale.X, 6/scale.Y);
             var strokeDotsDistance = Math.Max(0.5f/scale.X, 0.5f/scale.Y);
